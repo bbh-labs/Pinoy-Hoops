@@ -1,0 +1,13 @@
+[package]
+name = "pinoy-hoops"
+version = "0.1.0"
+authors = ["jacky"]
+
+[dependencies]
+iron = "*"
+mount = "*"
+persistent = "*"
+router = "*"
+staticfile = "*"
+urlencoded = "*"
+getopts = "*"
