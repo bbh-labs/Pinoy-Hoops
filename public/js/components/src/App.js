@@ -2,6 +2,9 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
+import Flux from 'flux';
+
+var dispatcher = new Flux.Dispatcher();
 
 class App extends React.Component {
     render() {
@@ -13,6 +16,16 @@ class App extends React.Component {
             </div>
         )
     }
+    componentDidMount() {
+        dispatcher.register(function(payload) {
+            switch (payload.type) {
+            case 'map-click':
+                // TODO: Implement upload hoop by clicking on the map
+                console.log(payload.event.latlng);
+                break;
+            }
+        });
+    }
 }
 
 class Mapp extends React.Component {
@@ -22,6 +35,9 @@ class Mapp extends React.Component {
     componentDidMount() {
         L.mapbox.accessToken = 'pk.eyJ1IjoiemFjb25nIiwiYSI6ImNpbG4yOHB4cTAwczZ1bGtuZGFkcW11OWEifQ.5CuLAlmVw7YwZblPzvJvAw';
         var map = L.mapbox.map('map', 'zacong.phbnc5dd');
+        map.on('click', function(event) {
+            dispatcher.dispatch({ type: 'map-click', event: event });
+        });
     }
 }
 
