@@ -50,7 +50,7 @@ fn main() {
                 "port",
                 "set server port",
                 "PORT");
-    opts.optflag("", "serve-website", "");
+    opts.optflag("", "serve-site", "");
     opts.optflag("h", "help", "print this help menu");
 
     let matches = match opts.parse(&args[1..]) {
@@ -66,7 +66,7 @@ fn main() {
     router.get("/hoops", hoops_handler);
 
     let mut mount = Mount::new();
-    if matches.opt_present("serve-website") {
+    if matches.opt_present("serve-site") {
         mount.mount("/", Static::new(Path::new("public")));
     }
     mount.mount("/api", router);
