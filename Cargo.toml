@@ -6,8 +6,19 @@ authors = ["jacky"]
 [dependencies]
 iron = "*"
 mount = "*"
+params = "*"
 persistent = "*"
 router = "*"
 staticfile = "*"
 urlencoded = "*"
+url = "*"
+rustc-serialize = "*"
 getopts = "*"
+
+[dependencies.postgres]
+version = "*"
+features = [ "chrono" ]
+
+[dependencies.chrono]
+version = "*"
+features = [ "rustc-serialize" ]

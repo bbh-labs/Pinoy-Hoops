@@ -1,0 +1,11 @@
+#add-hoop-image-label {
+    cursor: pointer;
+}
+
+#add-hoop-image-input {
+    display: none;
+}
+
+.hoop img {
+    max-width: 100%;
+}

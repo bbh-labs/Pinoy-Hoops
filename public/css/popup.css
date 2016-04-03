@@ -10,7 +10,9 @@
   visibility: hidden;
   opacity: 0;
 }
-.overlay:target {
+
+.popup1--activated,
+.popup2--activated {
   visibility: visible;
   opacity: 1;
 }
