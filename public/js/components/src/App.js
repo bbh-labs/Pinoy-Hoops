@@ -7,6 +7,9 @@ import cx from 'classnames';
 
 var dispatcher = new Flux.Dispatcher();
 
+const BASE_URL = '';
+//const BASE_URL = 'http://pinoy-hoops.bbh-labs.com.sg';
+
 class App extends React.Component {
     render() {
         return (
@@ -34,7 +37,7 @@ class App extends React.Component {
     }
     fetchHoops = () => {
         $.ajax({
-            url: '/api/hoops',
+            url: BASE_URL + '/api/hoops',
             method: 'GET',
             dataType: 'json',
         }).done((hoops) => {
@@ -178,7 +181,7 @@ class AddHoop extends React.Component {
         let form = event.target;
 
         $.ajax({
-            url: '/api/hoop',
+            url: BASE_URL + '/api/hoop',
             method: 'POST',
             data: new FormData(form),
             contentType: false,

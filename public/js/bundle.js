@@ -74,6 +74,9 @@
 
 	var dispatcher = new _flux2.default.Dispatcher();
 
+	var BASE_URL = '';
+	//const BASE_URL = 'http://pinoy-hoops.bbh-labs.com.sg';
+
 	var App = function (_React$Component) {
 	    _inherits(App, _React$Component);
 
@@ -92,7 +95,7 @@
 	            hoops: []
 	        }, _this.fetchHoops = function () {
 	            $.ajax({
-	                url: '/api/hoops',
+	                url: BASE_URL + '/api/hoops',
 	                method: 'GET',
 	                dataType: 'json'
 	            }).done(function (hoops) {
@@ -337,7 +340,7 @@
 	            var form = event.target;
 
 	            $.ajax({
-	                url: '/api/hoop',
+	                url: BASE_URL + '/api/hoop',
 	                method: 'POST',
 	                data: new FormData(form),
 	                contentType: false,
