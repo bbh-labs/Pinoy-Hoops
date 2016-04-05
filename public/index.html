@@ -9,6 +9,7 @@
 
     <link href="css/modestgrid.css" media="screen" rel="stylesheet" type="text/css">
     <link href="css/styles.css" media="screen" rel="stylesheet" type="text/css">
+    <link href="css/login.css" media="screen" rel="stylesheet" type="text/css">
     <link href='https://fonts.googleapis.com/css?family=Montserrat:400,700' rel='stylesheet' type='text/css'>
 
     <script src='https://api.mapbox.com/mapbox.js/v2.3.0/mapbox.js'></script>
@@ -24,6 +25,24 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+    <script>
+    window.fbAsyncInit = function() {
+        FB.init({
+        appId      : '970956242984156',
+        xfbml      : true,
+        version    : 'v2.5'
+        });
+    };
+
+    (function(d, s, id){
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement(s); js.id = id;
+        js.src = "//connect.facebook.net/en_US/sdk.js";
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+    </script>
+    
     <div id='root'></div>
     <script src='js/bundle.js'></script>
 </body>
