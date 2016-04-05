@@ -297,6 +297,8 @@ fn main() {
     };
 
     let conn = Connection::connect(format!("postgres://{}{}@{}:{}", dbuser, dbpass, dbhost, dbport).as_str(), SslMode::None).unwrap();
+
+    // Create Hoop table
     if let Err(error) = conn.execute(
         "CREATE TABLE hoop (
              id              BIGSERIAL PRIMARY KEY,
@@ -305,9 +307,28 @@ fn main() {
              image_url       VARCHAR NOT NULL,
              latitude        REAL NOT NULL,
              longitude       REAL NOT NULL,
+             created_by      BIGSERIAL NOT NULL,
              created_at      TIMESTAMP WITH TIME ZONE NOT NULL,
              updated_at      TIMESTAMP WITH TIME ZONE NOT NULL,
              UNIQUE (id, name)
+         )", &[])
+    {
+        if let Error::Db(error) = error {
+            if error.code != SqlState::DuplicateTable {
+                println!("{:?}", error);
+                return;
+            }
+        }
+    }
+
+    // Create User table
+    if let Err(error) = conn.execute(
+        "CREATE TABLE usr (
+             id              BIGSERIAL PRIMARY KEY,
+             email           VARCHAR NOT NULL,
+             created_at      TIMESTAMP WITH TIME ZONE NOT NULL,
+             updated_at      TIMESTAMP WITH TIME ZONE NOT NULL,
+             UNIQUE (id, email)
          )", &[])
     {
         if let Error::Db(error) = error {
