@@ -342,7 +342,10 @@ fn post_user_handler(req: &mut Request) -> IronResult<Response> {
                 }
             }
         },
-        Err(error) => println!("{:?}", error),
+        Err(error) => {
+            println!("{:?}", error);
+            return Ok(Response::with((status::InternalServerError)));
+        },
     }
 
     // Insert user
