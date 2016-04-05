@@ -2,7 +2,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Router, Route, IndexRoute, Link, browserHistory } from 'react-router';
+import { Router, Route, IndexRoute, Link, hashHistory } from 'react-router';
 
 import Login from "./Login";
 import Dashboard from "./Dashboard";
@@ -21,13 +21,13 @@ class App extends React.Component {
         user: null,
     }
     componentDidMount() {
-        browserHistory.replace('/dashboard');
+        hashHistory.replace('/dashboard');
 
         this.dispatcherID = dispatcher.register((payload) => {
             switch (payload.type) {
             case 'loggedIn':
                 this.setState({ user: payload.user });
-                browserHistory.replace('/dashboard');
+                hashHistory.replace('/dashboard');
                 break;
             }
         });
@@ -44,7 +44,7 @@ function requireAuth(nextState, replace) {
 }
 
 ReactDOM.render((
-    <Router history={ browserHistory }>
+    <Router history={ hashHistory }>
         <Route path='/' component={ App }>
             <Route path='dashboard' component={ Dashboard } onEnter={ requireAuth } />
             <Route path='login' component={ Login } />

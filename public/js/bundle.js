@@ -115,13 +115,13 @@
 	        value: function componentDidMount() {
 	            var _this2 = this;
 
-	            _reactRouter.browserHistory.replace('/dashboard');
+	            _reactRouter.hashHistory.replace('/dashboard');
 
 	            this.dispatcherID = _dispatcher2.default.register(function (payload) {
 	                switch (payload.type) {
 	                    case 'loggedIn':
 	                        _this2.setState({ user: payload.user });
-	                        _reactRouter.browserHistory.replace('/dashboard');
+	                        _reactRouter.hashHistory.replace('/dashboard');
 	                        break;
 	                }
 	            });
@@ -142,7 +142,7 @@
 
 	_reactDom2.default.render(_react2.default.createElement(
 	    _reactRouter.Router,
-	    { history: _reactRouter.browserHistory },
+	    { history: _reactRouter.hashHistory },
 	    _react2.default.createElement(
 	        _reactRouter.Route,
 	        { path: '/', component: App },
