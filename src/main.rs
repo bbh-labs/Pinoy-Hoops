@@ -71,6 +71,9 @@ const GET_USER_SQL: &'static str =
 const GET_USER_BY_ID_SQL: &'static str =
     "SELECT * FROM usr WHERE id = $1 LIMIT 1";
 
+const GET_USER_BY_HANDLE_SQL: &'static str =
+    "SELECT * FROM usr WHERE email = $1 OR facebook_id = $2 OR twitter_id = $3 LIMIT 1";
+
 const INSERT_USER_SQL: &'static str =
     "INSERT INTO usr (name, email, facebook_id, twitter_id, created_at, updated_at)
      VALUES ($1, $2, $3, $4, NOW(), NOW())
@@ -315,6 +318,31 @@ fn post_user_handler(req: &mut Request) -> IronResult<Response> {
     // There's no way for user to sign up without email, facebook_id, or twitter_id
     if email == empty_string && facebook_id == empty_string && twitter_id == empty_string {
         return Ok(Response::with((status::BadRequest)));
+    }
+
+    // Get user if exists
+    match conn.query(GET_USER_BY_HANDLE_SQL, &[&email, &facebook_id, &twitter_id]) {
+        Ok(ref rows) => {
+            if rows.len() > 0 {
+                let row = rows.iter().next().unwrap();
+                let user = User {
+                    id: row.get(0),
+                    name: row.get(1),
+                    email: row.get(2),
+                    facebook_id: row.get(3),
+                    twitter_id: row.get(4),
+                    created_at: row.get(5),
+                    updated_at: row.get(6),
+                };
+
+                if let Ok(json_output) = json::encode(&user) {
+                    let mut response = Response::with((iron::status::Ok, json_output));
+                    response.headers.set(headers::AccessControlAllowOrigin::Value("*".to_string()));
+                    return Ok(response);
+                }
+            }
+        },
+        Err(error) => println!("{:?}", error),
     }
 
     // Insert user
