@@ -65,6 +65,17 @@ const INSERT_HOOP_SQL: &'static str =
     "INSERT INTO hoop (name, description, image_url, latitude, longitude, created_at, updated_at)
      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())";
 
+const GET_USER_SQL: &'static str =
+    "SELECT * FROM usr";
+
+const GET_USER_BY_ID_SQL: &'static str =
+    "SELECT * FROM usr WHERE id = $1 LIMIT 1";
+
+const INSERT_USER_SQL: &'static str =
+    "INSERT INTO usr (name, email, facebook_id, twitter_id, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, NOW(), NOW())
+     RETURNING id";
+
 #[derive(RustcEncodable)]
 struct Hoop {
     id: i64,
@@ -75,6 +86,17 @@ struct Hoop {
     longitude: f32,
     created_at: String,
     updated_at: String,
+}
+
+#[derive(RustcEncodable)]
+struct User {
+    id: i64,
+    name: String,
+    email: String,
+    facebook_id: String,
+    twitter_id: String,
+    created_at: DateTime<UTC>,
+    updated_at: DateTime<UTC>,
 }
 
 fn get_hoops_handler(req: &mut Request) -> IronResult<Response> {
@@ -229,6 +251,104 @@ fn post_hoop_handler(req: &mut Request) -> IronResult<Response> {
     Ok(Response::with((status::Ok)))
 }
 
+fn get_user_handler(req: &mut Request) -> IronResult<Response> {
+    // Get database handle
+    let mutex = req.get::<Write<DatabaseConnection>>().unwrap();
+    let conn = mutex.lock().unwrap();
+
+    for row in &conn.query(GET_USER_SQL, &[]).unwrap() {
+        let user = User {
+            id: row.get(0),
+            name: row.get(1),
+            email: row.get(2),
+            facebook_id: row.get(3),
+            twitter_id: row.get(4),
+            created_at: row.get(5),
+            updated_at: row.get(6),
+        };
+
+        if let Ok(json_output) = json::encode(&user) {
+            let mut response = Response::with((iron::status::Ok, json_output));
+            response.headers.set(headers::AccessControlAllowOrigin::Value("*".to_string()));
+            return Ok(response);
+        }
+    }
+
+    Ok(Response::with((iron::status::NotFound)))
+}
+
+fn post_user_handler(req: &mut Request) -> IronResult<Response> {
+    // Get database handle
+    let mutex = req.get::<Write<DatabaseConnection>>().unwrap();
+    let conn = mutex.lock().unwrap();
+
+    let map = match req.get_ref::<Params>() {
+        Ok(map) => map,
+        Err(error) => {
+            println!("{:?}", error);
+            return Ok(Response::with((status::BadRequest)));
+        },
+    };
+
+    let name = match map.find(&["name"]) {
+        Some(&Value::String(ref val)) => val,
+        _ => return Ok(Response::with((status::BadRequest))),
+    };
+
+    let ref empty_string = "".to_string();
+
+    let email = match map.find(&["email"]) {
+        Some(&Value::String(ref val)) => val,
+        _ => { empty_string }
+    };
+
+    let facebook_id = match map.find(&["facebook_id"]) {
+        Some(&Value::String(ref val)) => val,
+        _ => { empty_string }
+    };
+
+    let twitter_id = match map.find(&["twitter_id"]) {
+        Some(&Value::String(ref val)) => val,
+        _ => { empty_string }
+    };
+
+    // There's no way for user to sign up without email, facebook_id, or twitter_id
+    if email == empty_string && facebook_id == empty_string && twitter_id == empty_string {
+        return Ok(Response::with((status::BadRequest)));
+    }
+
+    // Insert user
+    match conn.query(INSERT_USER_SQL, &[&name, &email, &facebook_id, &twitter_id]) {
+        Ok(ref rows) => {
+            let id: i64 = rows.iter().next().unwrap().get(0);
+            match conn.query(GET_USER_BY_ID_SQL, &[&id]) {
+                Ok(rows) => {
+                    let row = rows.iter().next().unwrap();
+                    let user = User {
+                        id: row.get(0),
+                        name: row.get(1),
+                        email: row.get(2),
+                        facebook_id: row.get(3),
+                        twitter_id: row.get(4),
+                        created_at: row.get(5),
+                        updated_at: row.get(6),
+                    };
+
+                    if let Ok(json_output) = json::encode(&user) {
+                        let mut response = Response::with((iron::status::Ok, json_output));
+                        response.headers.set(headers::AccessControlAllowOrigin::Value("*".to_string()));
+                        return Ok(response);
+                    }
+                },
+                Err(error) => println!("{:?}", error),
+            }
+        },
+        Err(error) => println!("{:?}", error),
+    }
+
+    Ok(Response::with((status::InternalServerError)))
+}
+
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options]", program);
     print!("{}", opts.usage(&brief));
@@ -325,10 +445,13 @@ fn main() {
     if let Err(error) = conn.execute(
         "CREATE TABLE usr (
              id              BIGSERIAL PRIMARY KEY,
-             email           VARCHAR NOT NULL,
+             name            VARCHAR NOT NULL,
+             email           VARCHAR,
+             facebook_id     VARCHAR,
+             twitter_id      VARCHAR,
              created_at      TIMESTAMP WITH TIME ZONE NOT NULL,
              updated_at      TIMESTAMP WITH TIME ZONE NOT NULL,
-             UNIQUE (id, email)
+             UNIQUE (id, email, facebook_id, twitter_id)
          )", &[])
     {
         if let Error::Db(error) = error {
@@ -342,6 +465,8 @@ fn main() {
     let mut router = Router::new();
     router.get("/hoops", get_hoops_handler);
     router.post("/hoop", post_hoop_handler);
+    router.get("/user", get_user_handler);
+    router.post("/user", post_user_handler);
 
     let mut mount = Mount::new();
     if matches.opt_present("serve-site") {

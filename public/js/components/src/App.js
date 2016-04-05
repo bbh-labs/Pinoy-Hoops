@@ -17,6 +17,21 @@ class App extends React.Component {
             </div>
         )
     }
+    state = {
+        user: null,
+    }
+    componentDidMount() {
+        browserHistory.replace('/dashboard');
+
+        this.dispatcherID = dispatcher.register((payload) => {
+            switch (payload.type) {
+            case 'loggedIn':
+                this.setState({ user: payload.user });
+                browserHistory.replace('/dashboard');
+                break;
+            }
+        });
+    }
 }
 
 function requireAuth(nextState, replace) {
@@ -31,7 +46,7 @@ function requireAuth(nextState, replace) {
 ReactDOM.render((
     <Router history={ browserHistory }>
         <Route path='/' component={ App }>
-            <IndexRoute component={ Dashboard } onEnter={ requireAuth } />
+            <Route path='dashboard' component={ Dashboard } onEnter={ requireAuth } />
             <Route path='login' component={ Login } />
         </Route>
     </Router>

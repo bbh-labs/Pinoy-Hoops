@@ -1,11 +1,12 @@
 @import url(https://fonts.googleapis.com/css?family=Roboto:300);
 
 
-.logo{
+.logo {
   max-width: 240px;
   margin: 30px auto;
   display: block;
 }
+
 .login-page {
   width: 360px;
   padding: 7% 0 0;
@@ -23,7 +24,7 @@
 
 }
 
-.login-page h3{
+.login-page h3 {
   text-transform: uppercase;
   font-size: 32pt;
   color: white;
@@ -33,7 +34,7 @@
   margin: 10px;
 }
 
-.login-page h4{
+.login-page h4 {
   text-transform: uppercase;
   font-size: 16pt;
   color: #333;
@@ -53,6 +54,7 @@
   text-align: center;
   box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.2), 0 5px 5px 0 rgba(0, 0, 0, 0.24);
 }
+
 .form input {
   outline: 0;
   background: #f2f2f2;
@@ -63,6 +65,7 @@
   box-sizing: border-box;
   font-size: 14px;
 }
+
 .form button {
   text-transform: uppercase;
   outline: 0;
@@ -76,19 +79,25 @@
   transition: all 0.3 ease;
   cursor: pointer;
 }
+
 .form button:hover,.form button:active,.form button:focus {
   background: #47a0dc;
 }
+
 .form .message {
   margin: 15px 0 0;
   color: #b3b3b3;
   font-size: 12px;
 }
+
 .form .message a {
   color: #47a0dc;
   text-decoration: none;
 }
+
 .form .register-form {
   display: none;
 }
 
+.facebook-login { background-color: #3c5a99 }
+.twitter-login { background-color: #2ca7e0 }

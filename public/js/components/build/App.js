@@ -40,9 +40,19 @@ var App = function (_React$Component) {
     _inherits(App, _React$Component);
 
     function App() {
+        var _Object$getPrototypeO;
+
+        var _temp, _this, _ret;
+
         _classCallCheck(this, App);
 
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(App).apply(this, arguments));
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+        }
+
+        return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_Object$getPrototypeO = Object.getPrototypeOf(App)).call.apply(_Object$getPrototypeO, [this].concat(args))), _this), _this.state = {
+            user: null
+        }, _temp), _possibleConstructorReturn(_this, _ret);
     }
 
     _createClass(App, [{
@@ -53,6 +63,22 @@ var App = function (_React$Component) {
                 { id: 'app' },
                 this.props.children
             );
+        }
+    }, {
+        key: 'componentDidMount',
+        value: function componentDidMount() {
+            var _this2 = this;
+
+            _reactRouter.browserHistory.replace('/dashboard');
+
+            this.dispatcherID = _dispatcher2.default.register(function (payload) {
+                switch (payload.type) {
+                    case 'loggedIn':
+                        _this2.setState({ user: payload.user });
+                        _reactRouter.browserHistory.replace('/dashboard');
+                        break;
+                }
+            });
         }
     }]);
 
@@ -74,7 +100,7 @@ _reactDom2.default.render(_react2.default.createElement(
     _react2.default.createElement(
         _reactRouter.Route,
         { path: '/', component: App },
-        _react2.default.createElement(_reactRouter.IndexRoute, { component: _Dashboard2.default, onEnter: requireAuth }),
+        _react2.default.createElement(_reactRouter.Route, { path: 'dashboard', component: _Dashboard2.default, onEnter: requireAuth }),
         _react2.default.createElement(_reactRouter.Route, { path: 'login', component: _Login2.default })
     )
 ), document.getElementById('root'));

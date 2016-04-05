@@ -10,6 +10,10 @@ var _reactDom = require('react-dom');
 
 var _reactDom2 = _interopRequireDefault(_reactDom);
 
+var _api = require('./api');
+
+var _api2 = _interopRequireDefault(_api);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -43,10 +47,10 @@ var Login = function (_React$Component) {
                     { className: 'form' },
                     _react2.default.createElement(
                         'form',
-                        { className: 'register-form' },
+                        { action: '#', className: 'register-form' },
                         _react2.default.createElement('input', { type: 'text', placeholder: 'name' }),
                         _react2.default.createElement('input', { type: 'password', placeholder: 'password' }),
-                        _react2.default.createElement('input', { type: 'text', placeholder: 'email address' }),
+                        _react2.default.createElement('input', { type: 'email', placeholder: 'email address' }),
                         _react2.default.createElement(
                             'button',
                             null,
@@ -65,7 +69,7 @@ var Login = function (_React$Component) {
                     ),
                     _react2.default.createElement(
                         'form',
-                        { className: 'login-form' },
+                        { action: '#', className: 'login-form' },
                         _react2.default.createElement(
                             'h4',
                             null,
@@ -73,18 +77,13 @@ var Login = function (_React$Component) {
                         ),
                         _react2.default.createElement(
                             'button',
-                            { style: { backgroundColor: '#3c5a99' } },
+                            { className: 'facebook-login', onClick: _api2.default.login.bind(this, 'facebook') },
                             'Facebook'
                         ),
                         _react2.default.createElement(
                             'button',
-                            { style: { backgroundColor: '#2ca7e0' } },
+                            { className: 'twitter-login', onClick: _api2.default.login.bind(this, 'twitter') },
                             'Twitter'
-                        ),
-                        _react2.default.createElement(
-                            'button',
-                            { style: { backgroundColor: '#a77b5e' } },
-                            'Instagram'
                         ),
                         _react2.default.createElement(
                             'p',

@@ -86,9 +86,19 @@
 	    _inherits(App, _React$Component);
 
 	    function App() {
+	        var _Object$getPrototypeO;
+
+	        var _temp, _this, _ret;
+
 	        _classCallCheck(this, App);
 
-	        return _possibleConstructorReturn(this, Object.getPrototypeOf(App).apply(this, arguments));
+	        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	            args[_key] = arguments[_key];
+	        }
+
+	        return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_Object$getPrototypeO = Object.getPrototypeOf(App)).call.apply(_Object$getPrototypeO, [this].concat(args))), _this), _this.state = {
+	            user: null
+	        }, _temp), _possibleConstructorReturn(_this, _ret);
 	    }
 
 	    _createClass(App, [{
@@ -99,6 +109,22 @@
 	                { id: 'app' },
 	                this.props.children
 	            );
+	        }
+	    }, {
+	        key: 'componentDidMount',
+	        value: function componentDidMount() {
+	            var _this2 = this;
+
+	            _reactRouter.browserHistory.replace('/dashboard');
+
+	            this.dispatcherID = _dispatcher2.default.register(function (payload) {
+	                switch (payload.type) {
+	                    case 'loggedIn':
+	                        _this2.setState({ user: payload.user });
+	                        _reactRouter.browserHistory.replace('/dashboard');
+	                        break;
+	                }
+	            });
 	        }
 	    }]);
 
@@ -120,7 +146,7 @@
 	    _react2.default.createElement(
 	        _reactRouter.Route,
 	        { path: '/', component: App },
-	        _react2.default.createElement(_reactRouter.IndexRoute, { component: _Dashboard2.default, onEnter: requireAuth }),
+	        _react2.default.createElement(_reactRouter.Route, { path: 'dashboard', component: _Dashboard2.default, onEnter: requireAuth }),
 	        _react2.default.createElement(_reactRouter.Route, { path: 'login', component: _Login2.default })
 	    )
 	), document.getElementById('root'));
@@ -25167,6 +25193,10 @@
 
 	var _jquery2 = _interopRequireDefault(_jquery);
 
+	var _dispatcher = __webpack_require__(223);
+
+	var _dispatcher2 = _interopRequireDefault(_dispatcher);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -25181,13 +25211,45 @@
 
 	        //static BASE_URL = 'http://pinoy-hoops.bbh-labs.com.sg'
 
-	        value: function login(email) {
-	            console.log('Test login from API');
+	        value: function login(type) {
+	            switch (type) {
+	                default:
+	                case 'facebook':
+	                    FB.login(function (user) {
+	                        FB.api('/me', 'GET', { fields: 'id,name,email' }, function (user) {
+	                            API.loginUser({ name: user.name, email: user.email, facebook_id: user.id }, function (user) {
+	                                API.user = user;
+	                                _dispatcher2.default.dispatch({ type: 'loggedIn', user: user });
+	                            }, function (response) {
+	                                alert('failed: ' + response.statusText);
+	                            });
+	                        });
+	                    }, { scope: 'public_profile,email' });
+	                    break;
+	                case 'twitter':
+	                    console.log('Logging in through Twitter');
+	                    break;
+	            }
+	        }
+	    }, {
+	        key: 'loginUser',
+	        value: function loginUser(user, done, fail) {
+	            _jquery2.default.ajax({
+	                url: API.BASE_URL + '/api/user',
+	                method: 'POST',
+	                data: user,
+	                dataType: 'json'
+	            }).done(done).fail(fail);
 	        }
 	    }, {
 	        key: 'loggedIn',
 	        value: function loggedIn() {
-	            return false;
+	            return !!API.user;
+	        }
+	    }, {
+	        key: 'logOut',
+	        value: function logOut() {
+	            API.user = null;
 	        }
 	    }, {
 	        key: 'fetchHoops',
@@ -25219,8 +25281,18 @@
 	/////////////////
 
 	API.BASE_URL = '';
+	API.user = null;
 	function statusChangeCallback(response) {
-	    if (response.status === 'connected') {} else if (response.status === 'not_authorized') {} else {}
+	    if (response.status === 'connected') {
+	        FB.api('/me', 'GET', { fields: 'id,name,email' }, function (response) {
+	            API.getUser(response.email, function (user) {
+	                _dispatcher2.default.dispatch({ type: 'loggedIn', user: { id: user.id, email: user.email } });
+	            }, function (response) {
+	                console.log('failed: ' + response);
+	                alert('Could not login!');
+	            });
+	        });
+	    } else if (response.status === 'not_authorized') {} else {}
 	}
 
 	function checkLoginState() {
@@ -35730,6 +35802,10 @@
 
 	var _reactDom2 = _interopRequireDefault(_reactDom);
 
+	var _api = __webpack_require__(220);
+
+	var _api2 = _interopRequireDefault(_api);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -35763,10 +35839,10 @@
 	                    { className: 'form' },
 	                    _react2.default.createElement(
 	                        'form',
-	                        { className: 'register-form' },
+	                        { action: '#', className: 'register-form' },
 	                        _react2.default.createElement('input', { type: 'text', placeholder: 'name' }),
 	                        _react2.default.createElement('input', { type: 'password', placeholder: 'password' }),
-	                        _react2.default.createElement('input', { type: 'text', placeholder: 'email address' }),
+	                        _react2.default.createElement('input', { type: 'email', placeholder: 'email address' }),
 	                        _react2.default.createElement(
 	                            'button',
 	                            null,
@@ -35785,7 +35861,7 @@
 	                    ),
 	                    _react2.default.createElement(
 	                        'form',
-	                        { className: 'login-form' },
+	                        { action: '#', className: 'login-form' },
 	                        _react2.default.createElement(
 	                            'h4',
 	                            null,
@@ -35793,18 +35869,13 @@
 	                        ),
 	                        _react2.default.createElement(
 	                            'button',
-	                            { style: { backgroundColor: '#3c5a99' } },
+	                            { className: 'facebook-login', onClick: _api2.default.login.bind(this, 'facebook') },
 	                            'Facebook'
 	                        ),
 	                        _react2.default.createElement(
 	                            'button',
-	                            { style: { backgroundColor: '#2ca7e0' } },
+	                            { className: 'twitter-login', onClick: _api2.default.login.bind(this, 'twitter') },
 	                            'Twitter'
-	                        ),
-	                        _react2.default.createElement(
-	                            'button',
-	                            { style: { backgroundColor: '#a77b5e' } },
-	                            'Instagram'
 	                        ),
 	                        _react2.default.createElement(
 	                            'p',
