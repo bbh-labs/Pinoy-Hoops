@@ -171,12 +171,14 @@ class AddHoop extends React.Component {
     submit = (event) => {
         event.preventDefault();
 
-        API.addHoop(new FormData(event.target), () => {
+        let form = event.target;
+
+        API.addHoop(new FormData(form), () => {
             form.reset();
             dispatcher.dispatch({ type: 'add-hoop' });
             this.setState({ activated: false });
         }, (response) => {
-            alert('fail: ' + response);
+            alert('fail: ' + JSON.stringify(response));
         });
     }
 }

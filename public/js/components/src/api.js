@@ -47,14 +47,24 @@ class API {
         }).done(done).fail(fail);
     }
     static logOut() {
-        API.user = null;
+        $.ajax({
+            url: '/api/logout',
+            method: 'POST',
+        }).done(function() {
+            API.user = null;
+        }).fail(fail);
     }
     static fetchHoops(done, fail) {
         $.ajax({
             url: API.BASE_URL + '/api/hoops',
             method: 'GET',
             dataType: 'json',
-        }).done(done).fail(fail);
+        }).done(done).fail(function(response) {
+            fail(response);
+            if (response.status == 400) {
+                window.location.reload();
+            }
+        });
     }
     static addHoop(data, done, fail) {
         $.ajax({
@@ -63,7 +73,12 @@ class API {
             data: data,
             contentType: false,
             processData: false,
-        }).done(done).fail(fail);
+        }).done(done).fail(function(response) {
+            fail(response);
+            if (response.status == 400) {
+                window.location.reload();
+            }
+        });
     }
 }
 

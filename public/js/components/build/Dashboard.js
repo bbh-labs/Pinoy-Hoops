@@ -286,12 +286,14 @@ var AddHoop = function (_React$Component4) {
         }, _this5.submit = function (event) {
             event.preventDefault();
 
-            _api2.default.addHoop(new FormData(event.target), function () {
+            var form = event.target;
+
+            _api2.default.addHoop(new FormData(form), function () {
                 form.reset();
                 _dispatcher2.default.dispatch({ type: 'add-hoop' });
                 _this5.setState({ activated: false });
             }, function (response) {
-                alert('fail: ' + response);
+                alert('fail: ' + JSON.stringify(response));
             });
         }, _temp3), _possibleConstructorReturn(_this5, _ret3);
     }

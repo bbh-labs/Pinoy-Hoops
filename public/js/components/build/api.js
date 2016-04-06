@@ -70,7 +70,12 @@ var API = function () {
     }, {
         key: 'logOut',
         value: function logOut() {
-            API.user = null;
+            _jquery2.default.ajax({
+                url: '/api/logout',
+                method: 'POST'
+            }).done(function () {
+                API.user = null;
+            }).fail(fail);
         }
     }, {
         key: 'fetchHoops',
@@ -79,7 +84,12 @@ var API = function () {
                 url: API.BASE_URL + '/api/hoops',
                 method: 'GET',
                 dataType: 'json'
-            }).done(done).fail(fail);
+            }).done(done).fail(function (response) {
+                fail(response);
+                if (response.status == 400) {
+                    window.location.reload();
+                }
+            });
         }
     }, {
         key: 'addHoop',
@@ -90,7 +100,12 @@ var API = function () {
                 data: data,
                 contentType: false,
                 processData: false
-            }).done(done).fail(fail);
+            }).done(done).fail(function (response) {
+                fail(response);
+                if (response.status == 400) {
+                    window.location.reload();
+                }
+            });
         }
     }]);
 

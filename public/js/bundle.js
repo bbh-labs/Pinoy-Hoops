@@ -132,31 +132,29 @@
 	}(_react2.default.Component);
 
 	function requireAuth(nextState, replace) {
-	    var nextPathname = nextState.location.pathname;
-
-	    if (_api2.default.loggedIn()) {
-	        switch (nextPathname) {
-	            case '/login':
-	                _api2.default.checkLogIn(function () {
-	                    _reactRouter.hashHistory.replace('/dashboard');
-	                    //replace({
-	                    //    pathname: '/dashboard',
-	                    //    state: { nextPathname: nextPathname },
-	                    //});
-	                }, function () {});
-	                break;
-	        }
-	    } else {
-	        switch (nextPathname) {
-	            case '/dashboard':
-	                _api2.default.checkLogIn(function () {}, function () {
-	                    _reactRouter.hashHistory.replace('/login');
-	                    //replace({
-	                    //    pathname: '/login',
-	                    //    state: { nextPathname: nextPathname },
-	                    //});
-	                });
-	        }
+	    switch (nextState.location.pathname) {
+	        case '/login':
+	            _api2.default.checkLogIn(function () {
+	                _reactRouter.hashHistory.replace('/dashboard');
+	                //replace({
+	                //    pathname: '/dashboard',
+	                //    state: { nextPathname: nextState.location.pathname },
+	                //});
+	            }, function () {
+	                // do nothing
+	            });
+	            break;
+	        case '/dashboard':
+	            _api2.default.checkLogIn(function () {
+	                // do nothing
+	            }, function () {
+	                _reactRouter.hashHistory.replace('/login');
+	                //replace({
+	                //    pathname: '/login',
+	                //    state: { nextPathname: nextState.location.pathname },
+	                //});
+	            });
+	            break;
 	    }
 	}
 
@@ -25027,7 +25025,12 @@
 	    }, {
 	        key: 'logOut',
 	        value: function logOut() {
-	            API.user = null;
+	            _jquery2.default.ajax({
+	                url: '/api/logout',
+	                method: 'POST'
+	            }).done(function () {
+	                API.user = null;
+	            }).fail(fail);
 	        }
 	    }, {
 	        key: 'fetchHoops',
@@ -25036,7 +25039,12 @@
 	                url: API.BASE_URL + '/api/hoops',
 	                method: 'GET',
 	                dataType: 'json'
-	            }).done(done).fail(fail);
+	            }).done(done).fail(function (response) {
+	                fail(response);
+	                if (response.status == 400) {
+	                    window.location.reload();
+	                }
+	            });
 	        }
 	    }, {
 	        key: 'addHoop',
@@ -25047,7 +25055,12 @@
 	                data: data,
 	                contentType: false,
 	                processData: false
-	            }).done(done).fail(fail);
+	            }).done(done).fail(function (response) {
+	                fail(response);
+	                if (response.status == 400) {
+	                    window.location.reload();
+	                }
+	            });
 	        }
 	    }]);
 
@@ -35545,12 +35558,14 @@
 	        }, _this5.submit = function (event) {
 	            event.preventDefault();
 
-	            _api2.default.addHoop(new FormData(event.target), function () {
+	            var form = event.target;
+
+	            _api2.default.addHoop(new FormData(form), function () {
 	                form.reset();
 	                _dispatcher2.default.dispatch({ type: 'add-hoop' });
 	                _this5.setState({ activated: false });
 	            }, function (response) {
-	                alert('fail: ' + response);
+	                alert('fail: ' + JSON.stringify(response));
 	            });
 	        }, _temp3), _possibleConstructorReturn(_this5, _ret3);
 	    }

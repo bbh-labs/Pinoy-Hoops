@@ -86,31 +86,29 @@ var App = function (_React$Component) {
 }(_react2.default.Component);
 
 function requireAuth(nextState, replace) {
-    var nextPathname = nextState.location.pathname;
-
-    if (_api2.default.loggedIn()) {
-        switch (nextPathname) {
-            case '/login':
-                _api2.default.checkLogIn(function () {
-                    _reactRouter.hashHistory.replace('/dashboard');
-                    //replace({
-                    //    pathname: '/dashboard',
-                    //    state: { nextPathname: nextPathname },
-                    //});
-                }, function () {});
-                break;
-        }
-    } else {
-        switch (nextPathname) {
-            case '/dashboard':
-                _api2.default.checkLogIn(function () {}, function () {
-                    _reactRouter.hashHistory.replace('/login');
-                    //replace({
-                    //    pathname: '/login',
-                    //    state: { nextPathname: nextPathname },
-                    //});
-                });
-        }
+    switch (nextState.location.pathname) {
+        case '/login':
+            _api2.default.checkLogIn(function () {
+                _reactRouter.hashHistory.replace('/dashboard');
+                //replace({
+                //    pathname: '/dashboard',
+                //    state: { nextPathname: nextState.location.pathname },
+                //});
+            }, function () {
+                // do nothing
+            });
+            break;
+        case '/dashboard':
+            _api2.default.checkLogIn(function () {
+                // do nothing
+            }, function () {
+                _reactRouter.hashHistory.replace('/login');
+                //replace({
+                //    pathname: '/login',
+                //    state: { nextPathname: nextState.location.pathname },
+                //});
+            });
+            break;
     }
 }
 

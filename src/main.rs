@@ -76,8 +76,8 @@ const GET_HOOPS_SQL: &'static str =
     "SELECT * FROM hoop";
 
 const INSERT_HOOP_SQL: &'static str =
-    "INSERT INTO hoop (name, description, image_url, latitude, longitude, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5, NOW(), NOW())";
+    "INSERT INTO hoop (name, description, image_url, latitude, longitude, created_by, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())";
 
 const GET_USER_SQL: &'static str =
     "SELECT * FROM usr";
@@ -101,6 +101,7 @@ struct Hoop {
     image_url: String,
     latitude: f32,
     longitude: f32,
+    created_by: i64,
     created_at: String,
     updated_at: String,
 }
@@ -131,12 +132,13 @@ fn get_hoops_handler(req: &mut Request) -> IronResult<Response> {
             image_url: row.get(3),
             latitude: row.get(4),
             longitude: row.get(5),
+            created_by: row.get(6),
             created_at: "".to_string(),
             updated_at: "".to_string(),
         };
 
-        let created_at: DateTime<UTC> = row.get(6);
-        let updated_at: DateTime<UTC> = row.get(7);
+        let created_at: DateTime<UTC> = row.get(7);
+        let updated_at: DateTime<UTC> = row.get(8);
 
         hoop.created_at = created_at.to_rfc2822();
         hoop.updated_at = updated_at.to_rfc2822();
@@ -154,6 +156,11 @@ fn get_hoops_handler(req: &mut Request) -> IronResult<Response> {
 }
 
 fn post_hoop_handler(req: &mut Request) -> IronResult<Response> {
+    let (ok, user_id) = is_logged_in(req);
+    if !ok {
+        return Ok(Response::with((status::Forbidden)));
+    }
+
     // Get database handle
     let mutex = req.get::<Write<DatabaseConnection>>().unwrap();
     let conn = mutex.lock().unwrap();
@@ -255,7 +262,7 @@ fn post_hoop_handler(req: &mut Request) -> IronResult<Response> {
     };
 
     // Insert hoop
-    if let Err(error) = conn.execute(INSERT_HOOP_SQL, &[&name, &description, &image_url, &latitude, &longitude]) {
+    if let Err(error) = conn.execute(INSERT_HOOP_SQL, &[&name, &description, &image_url, &latitude, &longitude, &user_id]) {
         // Clean-up the image file since it failed to register on the database
         if let Err(error) = fs::remove_file(image_url) {
             println!("{:?}", error);
