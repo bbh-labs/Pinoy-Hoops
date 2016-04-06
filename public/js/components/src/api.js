@@ -31,7 +31,7 @@ class API {
     }
     static loginUser(user, done, fail) {
         $.ajax({
-            url: API.BASE_URL + '/api/user',
+            url: API.BASE_URL + '/api/login',
             method: 'POST',
             data: user,
             dataType: 'json',
@@ -39,6 +39,12 @@ class API {
     }
     static loggedIn() {
         return !!API.user;
+    }
+    static checkLogIn(done, fail) {
+        $.ajax({
+            url: '/api/login',
+            method: 'GET',
+        }).done(done).fail(fail);
     }
     static logOut() {
         API.user = null;

@@ -48,7 +48,7 @@ var API = function () {
         key: 'loginUser',
         value: function loginUser(user, done, fail) {
             _jquery2.default.ajax({
-                url: API.BASE_URL + '/api/user',
+                url: API.BASE_URL + '/api/login',
                 method: 'POST',
                 data: user,
                 dataType: 'json'
@@ -58,6 +58,14 @@ var API = function () {
         key: 'loggedIn',
         value: function loggedIn() {
             return !!API.user;
+        }
+    }, {
+        key: 'checkLogIn',
+        value: function checkLogIn(done, fail) {
+            _jquery2.default.ajax({
+                url: '/api/login',
+                method: 'GET'
+            }).done(done).fail(fail);
         }
     }, {
         key: 'logOut',

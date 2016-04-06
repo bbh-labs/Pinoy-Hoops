@@ -35,11 +35,33 @@ class App extends React.Component {
 }
 
 function requireAuth(nextState, replace) {
-    if (!API.loggedIn()) {
-        replace({
-            pathname: '/login',
-            state: { nextPathname: nextState.location.pathname },
-        });
+    let nextPathname = nextState.location.pathname;
+
+    if (API.loggedIn()) {
+        switch (nextPathname) {
+        case '/login':
+            API.checkLogIn(function() {
+                hashHistory.replace('/dashboard');
+                //replace({
+                //    pathname: '/dashboard',
+                //    state: { nextPathname: nextPathname },
+                //});
+            }, function() {
+            });
+            break;
+        }
+    } else {
+        switch (nextPathname) {
+        case '/dashboard':
+            API.checkLogIn(function() {
+            }, function() {
+                hashHistory.replace('/login');
+                //replace({
+                //    pathname: '/login',
+                //    state: { nextPathname: nextPathname },
+                //});
+            });
+        }
     }
 }
 
@@ -47,7 +69,7 @@ ReactDOM.render((
     <Router history={ hashHistory }>
         <Route path='/' component={ App }>
             <Route path='dashboard' component={ Dashboard } onEnter={ requireAuth } />
-            <Route path='login' component={ Login } />
+            <Route path='login' component={ Login } onEnter={ requireAuth } />
         </Route>
     </Router>
 ), document.getElementById('root'));

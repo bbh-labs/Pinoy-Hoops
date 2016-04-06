@@ -86,11 +86,31 @@ var App = function (_React$Component) {
 }(_react2.default.Component);
 
 function requireAuth(nextState, replace) {
-    if (!_api2.default.loggedIn()) {
-        replace({
-            pathname: '/login',
-            state: { nextPathname: nextState.location.pathname }
-        });
+    var nextPathname = nextState.location.pathname;
+
+    if (_api2.default.loggedIn()) {
+        switch (nextPathname) {
+            case '/login':
+                _api2.default.checkLogIn(function () {
+                    _reactRouter.hashHistory.replace('/dashboard');
+                    //replace({
+                    //    pathname: '/dashboard',
+                    //    state: { nextPathname: nextPathname },
+                    //});
+                }, function () {});
+                break;
+        }
+    } else {
+        switch (nextPathname) {
+            case '/dashboard':
+                _api2.default.checkLogIn(function () {}, function () {
+                    _reactRouter.hashHistory.replace('/login');
+                    //replace({
+                    //    pathname: '/login',
+                    //    state: { nextPathname: nextPathname },
+                    //});
+                });
+        }
     }
 }
 
@@ -101,6 +121,6 @@ _reactDom2.default.render(_react2.default.createElement(
         _reactRouter.Route,
         { path: '/', component: App },
         _react2.default.createElement(_reactRouter.Route, { path: 'dashboard', component: _Dashboard2.default, onEnter: requireAuth }),
-        _react2.default.createElement(_reactRouter.Route, { path: 'login', component: _Login2.default })
+        _react2.default.createElement(_reactRouter.Route, { path: 'login', component: _Login2.default, onEnter: requireAuth })
     )
 ), document.getElementById('root'));

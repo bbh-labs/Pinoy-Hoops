@@ -5,6 +5,7 @@ authors = ["jacky"]
 
 [dependencies]
 iron = "*"
+cookie = "*"
 mount = "*"
 params = "*"
 persistent = "*"
@@ -13,6 +14,7 @@ staticfile = "*"
 urlencoded = "*"
 url = "*"
 rustc-serialize = "*"
+openssl = "*"
 getopts = "*"
 
 [dependencies.postgres]
@@ -20,5 +22,9 @@ version = "*"
 features = [ "chrono" ]
 
 [dependencies.chrono]
+version = "*"
+features = [ "rustc-serialize" ]
+
+[dependencies.time]
 version = "*"
 features = [ "rustc-serialize" ]

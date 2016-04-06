@@ -1,26 +1,33 @@
 extern crate iron;
+extern crate cookie;
 extern crate mount;
 extern crate params;
 extern crate persistent;
 extern crate router;
 extern crate staticfile;
 extern crate postgres;
+extern crate time;
 extern crate chrono;
 extern crate url;
 extern crate rustc_serialize;
 extern crate getopts;
+extern crate openssl;
 
 // Std
 use std::env;
 use std::path::Path;
 use std::io::ErrorKind;
 use std::fs;
+use std::str;
 
 // Iron
 use iron::prelude::*;
 use iron::headers;
 use iron::status;
 use iron::typemap::Key;
+
+// Cookie
+use cookie::Cookie;
 
 // Mount
 use mount::Mount;
@@ -53,10 +60,17 @@ use rustc_serialize::json;
 // Getopts
 use getopts::Options;
 
+// OpenSSL
+use openssl::crypto::hmac::hmac;
+use openssl::crypto::hash::Type::SHA1;
+
 #[derive(Copy, Clone)]
 pub struct DatabaseConnection;
 
 impl Key for DatabaseConnection { type Value = Connection; }
+
+const SESSION_KEY: &'static str = "VdN9ndIQ2L0cNa6v0e6e5Q==";
+const SESSION_DURATION_HOURS: i64 = 2;
 
 const GET_HOOPS_SQL: &'static str =
     "SELECT * FROM hoop";
@@ -280,10 +294,50 @@ fn get_user_handler(req: &mut Request) -> IronResult<Response> {
     Ok(Response::with((iron::status::NotFound)))
 }
 
-fn post_user_handler(req: &mut Request) -> IronResult<Response> {
+fn get_login_handler(req: &mut Request) -> IronResult<Response> {
+    let (ok, _) = is_logged_in(req);
+    if ok {
+        Ok(Response::with((status::Ok)))
+    } else {
+        Ok(Response::with((status::Forbidden)))
+    }
+}
+
+fn post_login_handler(req: &mut Request) -> IronResult<Response> {
     // Get database handle
     let mutex = req.get::<Write<DatabaseConnection>>().unwrap();
     let conn = mutex.lock().unwrap();
+
+    let (ok, user_id) = is_logged_in(req);
+    if ok {
+        match conn.query(GET_USER_BY_ID_SQL, &[&user_id]) {
+            Ok(rows) => {
+                let row = rows.iter().next().unwrap();
+                let user = User {
+                    id: row.get(0),
+                    name: row.get(1),
+                    email: row.get(2),
+                    facebook_id: row.get(3),
+                    twitter_id: row.get(4),
+                    created_at: row.get(5),
+                    updated_at: row.get(6),
+                };
+
+                if let Ok(json_output) = json::encode(&user) {
+                    let mut response = Response::with((iron::status::Ok, json_output));
+                    let expire_time = time::now() + time::Duration::hours(SESSION_DURATION_HOURS);
+                    let session_cookie = Cookie::new("SessionID".to_string(), create_session_id(user.id, &expire_time));
+                    let userid_cookie = Cookie::new("UserID".to_string(), format!("{}", user.id));
+                    let expires_cookie = Cookie::new("Expires".to_string(), format!("{}", time::strftime("%a, %d-%b-%Y %T %Z", &expire_time).unwrap()));
+                    let setcookie = headers::SetCookie(vec![session_cookie, userid_cookie, expires_cookie]);
+                    response.headers.set(setcookie);
+                    response.headers.set(headers::AccessControlAllowOrigin::Value("*".to_string()));
+                    return Ok(response);
+                }
+            },
+            Err(error) => println!("{:?}", error),
+        }
+    }
 
     let map = match req.get_ref::<Params>() {
         Ok(map) => map,
@@ -337,6 +391,12 @@ fn post_user_handler(req: &mut Request) -> IronResult<Response> {
 
                 if let Ok(json_output) = json::encode(&user) {
                     let mut response = Response::with((iron::status::Ok, json_output));
+                    let expire_time = time::now() + time::Duration::hours(SESSION_DURATION_HOURS);
+                    let session_cookie = Cookie::new("SessionID".to_string(), create_session_id(user.id, &expire_time));
+                    let userid_cookie = Cookie::new("UserID".to_string(), format!("{}", user.id));
+                    let expires_cookie = Cookie::new("Expires".to_string(), format!("{}", time::strftime("%a, %d-%b-%Y %T %Z", &expire_time).unwrap()));
+                    let setcookie = headers::SetCookie(vec![session_cookie, userid_cookie, expires_cookie]);
+                    response.headers.set(setcookie);
                     response.headers.set(headers::AccessControlAllowOrigin::Value("*".to_string()));
                     return Ok(response);
                 }
@@ -367,6 +427,12 @@ fn post_user_handler(req: &mut Request) -> IronResult<Response> {
 
                     if let Ok(json_output) = json::encode(&user) {
                         let mut response = Response::with((iron::status::Ok, json_output));
+                        let expire_time = time::now() + time::Duration::hours(SESSION_DURATION_HOURS);
+                        let session_cookie = Cookie::new("SessionID".to_string(), create_session_id(user.id, &expire_time));
+                        let userid_cookie = Cookie::new("UserID".to_string(), format!("{}", user.id));
+                        let expires_cookie = Cookie::new("Expires".to_string(), format!("{}", time::strftime("%a, %d-%b-%Y %T %Z", &expire_time).unwrap()));
+                        let setcookie = headers::SetCookie(vec![session_cookie, userid_cookie, expires_cookie]);
+                        response.headers.set(setcookie);
                         response.headers.set(headers::AccessControlAllowOrigin::Value("*".to_string()));
                         return Ok(response);
                     }
@@ -378,6 +444,61 @@ fn post_user_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     Ok(Response::with((status::InternalServerError)))
+}
+
+fn logout_handler(_: &mut Request) -> IronResult<Response> {
+    let mut response = Response::with((iron::status::Ok));
+    let session_cookie = Cookie::new("SessionID".to_string(), "deleted".to_string());
+    let setcookie = headers::SetCookie(vec![session_cookie]);
+    response.headers.set(setcookie);
+    response.headers.set(headers::AccessControlAllowOrigin::Value("*".to_string()));
+    Ok(response)
+}
+
+fn is_logged_in(req: &Request) -> (bool, i64) {
+    if let Some(&headers::Cookie(ref cookies)) = req.headers.get::<headers::Cookie>() {
+        let mut user_id = None;
+        let mut session_id = None;
+        let mut expires = None;
+
+        for cookie in cookies {
+            if cookie.name == "UserID" {
+                user_id = Some(cookie.value.clone());
+            } else if cookie.name == "SessionID" {
+                session_id = Some(cookie.value.clone());
+            } else if cookie.name == "Expires" {
+                expires = Some(cookie.value.clone());
+            }
+        }
+
+        if user_id.is_some() && session_id.is_some() && expires.is_some() {
+            let user_id = user_id.unwrap();
+            let session_id = session_id.unwrap();
+            let expires = expires.unwrap();
+
+            let hash = hmac(SHA1, SESSION_KEY.as_bytes(), &format!("{}|{}", user_id, &expires).as_bytes());
+            let mut new_hash = Vec::new();
+            for c in &hash {
+                new_hash.push(*c % 128);
+            }
+
+            let generated_session_id = str::from_utf8(&new_hash).unwrap().to_string();
+            if session_id == generated_session_id {
+                return (true, user_id.parse::<i64>().unwrap());
+            }
+        }
+    }
+
+    (false, 0)
+}
+
+fn create_session_id(id: i64, expire_time: &time::Tm) -> String {
+    let hash = hmac(SHA1, SESSION_KEY.as_bytes(), format!("{}|{}", id, time::strftime("%a, %d-%b-%Y %T %Z", &expire_time).unwrap()).as_bytes());
+    let mut new_hash = Vec::new();
+    for c in &hash {
+        new_hash.push(*c % 128);
+    }
+    str::from_utf8(&new_hash).unwrap().to_string()
 }
 
 fn print_usage(program: &str, opts: Options) {
@@ -497,7 +618,9 @@ fn main() {
     router.get("/hoops", get_hoops_handler);
     router.post("/hoop", post_hoop_handler);
     router.get("/user", get_user_handler);
-    router.post("/user", post_user_handler);
+    router.get("/login", get_login_handler);
+    router.post("/login", post_login_handler);
+    router.any("/logout", logout_handler);
 
     let mut mount = Mount::new();
     if matches.opt_present("serve-site") {
