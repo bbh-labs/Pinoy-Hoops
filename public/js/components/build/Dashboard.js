@@ -202,7 +202,7 @@ var Menu = function (_React$Component3) {
                             { className: 'menu' },
                             _react2.default.createElement(
                                 'a',
-                                { href: '/' },
+                                { className: 'logo-link', href: '/' },
                                 _react2.default.createElement('img', { className: 'logo', src: 'images/playpinoy_logo_b.png' })
                             ),
                             _react2.default.createElement(
