@@ -54,7 +54,7 @@ class API {
             API.user = null;
         }).fail(fail);
     }
-    static fetchHoops(done, fail) {
+    static getHoops(done, fail) {
         $.ajax({
             url: API.BASE_URL + '/api/hoops',
             method: 'GET',
@@ -87,6 +87,18 @@ class API {
             data: data,
             contentType: false,
             processData: false,
+        }).done(done).fail(function(response) {
+            fail(response);
+            if (response.status == 400) {
+                window.location.reload();
+            }
+        });
+    }
+    static getActivities(done, fail) {
+        $.ajax({
+            url: API.BASE_URL + '/api/activities',
+            method: 'GET',
+            dataType: 'json',
         }).done(done).fail(function(response) {
             fail(response);
             if (response.status == 400) {

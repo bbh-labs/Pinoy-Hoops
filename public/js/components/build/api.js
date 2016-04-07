@@ -78,8 +78,8 @@ var API = function () {
             }).fail(fail);
         }
     }, {
-        key: 'fetchHoops',
-        value: function fetchHoops(done, fail) {
+        key: 'getHoops',
+        value: function getHoops(done, fail) {
             _jquery2.default.ajax({
                 url: API.BASE_URL + '/api/hoops',
                 method: 'GET',
@@ -116,6 +116,20 @@ var API = function () {
                 data: data,
                 contentType: false,
                 processData: false
+            }).done(done).fail(function (response) {
+                fail(response);
+                if (response.status == 400) {
+                    window.location.reload();
+                }
+            });
+        }
+    }, {
+        key: 'getActivities',
+        value: function getActivities(done, fail) {
+            _jquery2.default.ajax({
+                url: API.BASE_URL + '/api/activities',
+                method: 'GET',
+                dataType: 'json'
             }).done(done).fail(function (response) {
                 fail(response);
                 if (response.status == 400) {

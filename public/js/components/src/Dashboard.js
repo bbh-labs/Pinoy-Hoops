@@ -4,6 +4,9 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import cx from 'classnames';
 
+// Moment
+import moment from 'moment';
+
 import API from "./api";
 import dispatcher from './dispatcher';
 
@@ -14,29 +17,38 @@ class Dashboard extends React.Component {
                 <Mapp hoops={ this.state.hoops } />
                 <Menu />
                 <AddHoop />
-                <Activities />
+                <Activities activities={ this.state.activities } />
             </div>
         )
     }
     state = {
         hoops: [],
+        activities: [],
     }
     componentDidMount() {
-        this.fetchHoops();
+        this.getHoops();
+        this.getActivities();
 
         this.dispatcherId = dispatcher.register((payload) => {
             switch (payload.type) {
             case 'add-hoop':
-                this.fetchHoops();
+                this.getHoops();
                 break;
             }
         });
     }
-    fetchHoops = () => {
-        API.fetchHoops((hoops) => {
+    getHoops = () => {
+        API.getHoops((hoops) => {
             this.setState({ hoops: hoops });
         }, () => {
-            alert('Failed to fetch hoops');
+            alert('Failed to get hoops');
+        });
+    }
+    getActivities = () => {
+        API.getActivities((activities) => {
+            this.setState({ activities: activities });
+        }, () => {
+            alert('Failed to get activities');
         });
     }
 }
@@ -166,6 +178,7 @@ class AddHoop extends React.Component {
         });
     }
     close = (event) => {
+        event.preventDefault();
         this.setState({ activated: false });
     }
     submit = (event) => {
@@ -233,39 +246,35 @@ class Activities extends React.Component {
                                                     <p>Mike Swift added new story to :Street 17' hoop</p>
                                                 </div>
                                             </div>
-                                        </div>    
-                                        <div className='panel-body'>
-                                            <div className='thumnails' >
-                                                <a><img src='images/dummy01.jpg' /></a>
-                                            </div>
-                                            <div className='title'>
-                                                <p className='time'>5 mins ago</p>
-                                                <p >Steven added new story to 'Lorong24' hoop</p>
-                                            </div>
                                         </div>
-                                        <div className='panel-body'>
-                                            <div className='thumnails' >
-                                                <a><img src='images/dummy01.jpg' /></a>
-                                            </div>
-                                            <div className='title'>
-                                                <p className='time'>5 mins ago</p>
-                                                <p >Steven added new story to 'Lorong24' hoop</p>
-                                            </div>
-                                        </div>
-                                        <div className='panel-body'>
-                                            <div className='thumnails' >
-                                                <a><img src='images/dummy01.jpg' /></a>
-                                            </div>
-                                            <div className='title'>
-                                                <p className='time'>5 mins ago</p>
-                                                <p >Steven added new story to 'Lorong24' hoop</p>
-                                            </div>
-                                        </div>
+                                        {
+                                            this.props.activities.map(function(activity, i) {
+                                                return <Activity key={i} activity={ activity } />;
+                                            })
+                                        }
                                     </div>
                                 </div>
                             </div>
                         </ul>  
                     </div>
+                </div>
+            </div>
+        )
+    }
+}
+
+class Activity extends React.Component {
+    render() {
+        let activity = this.props.activity;
+
+        return (
+            <div className='panel-body'>
+                <div className='thumnails' >
+                    <a><img src={ activity.hoop.image_url } /></a>
+                </div>
+                <div className='title'>
+                    <p className='time'>{ moment(activity.created_at).fromNow() }</p>
+                    <p>{ activity.user.name + activity.predicate + '\'' + activity.hoop.name + '\'' }</p>
                 </div>
             </div>
         )

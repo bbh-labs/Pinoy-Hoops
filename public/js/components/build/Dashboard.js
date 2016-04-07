@@ -14,6 +14,10 @@ var _classnames = require('classnames');
 
 var _classnames2 = _interopRequireDefault(_classnames);
 
+var _moment = require('moment');
+
+var _moment2 = _interopRequireDefault(_moment);
+
 var _api = require('./api');
 
 var _api2 = _interopRequireDefault(_api);
@@ -30,6 +34,9 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+// Moment
+
+
 var Dashboard = function (_React$Component) {
     _inherits(Dashboard, _React$Component);
 
@@ -45,12 +52,19 @@ var Dashboard = function (_React$Component) {
         }
 
         return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_Object$getPrototypeO = Object.getPrototypeOf(Dashboard)).call.apply(_Object$getPrototypeO, [this].concat(args))), _this), _this.state = {
-            hoops: []
-        }, _this.fetchHoops = function () {
-            _api2.default.fetchHoops(function (hoops) {
+            hoops: [],
+            activities: []
+        }, _this.getHoops = function () {
+            _api2.default.getHoops(function (hoops) {
                 _this.setState({ hoops: hoops });
             }, function () {
-                alert('Failed to fetch hoops');
+                alert('Failed to get hoops');
+            });
+        }, _this.getActivities = function () {
+            _api2.default.getActivities(function (activities) {
+                _this.setState({ activities: activities });
+            }, function () {
+                alert('Failed to get activities');
             });
         }, _temp), _possibleConstructorReturn(_this, _ret);
     }
@@ -64,7 +78,7 @@ var Dashboard = function (_React$Component) {
                 _react2.default.createElement(Mapp, { hoops: this.state.hoops }),
                 _react2.default.createElement(Menu, null),
                 _react2.default.createElement(AddHoop, null),
-                _react2.default.createElement(Activities, null)
+                _react2.default.createElement(Activities, { activities: this.state.activities })
             );
         }
     }, {
@@ -72,12 +86,13 @@ var Dashboard = function (_React$Component) {
         value: function componentDidMount() {
             var _this2 = this;
 
-            this.fetchHoops();
+            this.getHoops();
+            this.getActivities();
 
             this.dispatcherId = _dispatcher2.default.register(function (payload) {
                 switch (payload.type) {
                     case 'add-hoop':
-                        _this2.fetchHoops();
+                        _this2.getHoops();
                         break;
                 }
             });
@@ -282,6 +297,7 @@ var AddHoop = function (_React$Component4) {
             activated: false,
             latlng: { lat: 0, lng: 0 }
         }, _this5.close = function (event) {
+            event.preventDefault();
             _this5.setState({ activated: false });
         }, _this5.submit = function (event) {
             event.preventDefault();
@@ -519,87 +535,9 @@ var Activities = function (_React$Component6) {
                                                 )
                                             )
                                         ),
-                                        _react2.default.createElement(
-                                            'div',
-                                            { className: 'panel-body' },
-                                            _react2.default.createElement(
-                                                'div',
-                                                { className: 'thumnails' },
-                                                _react2.default.createElement(
-                                                    'a',
-                                                    null,
-                                                    _react2.default.createElement('img', { src: 'images/dummy01.jpg' })
-                                                )
-                                            ),
-                                            _react2.default.createElement(
-                                                'div',
-                                                { className: 'title' },
-                                                _react2.default.createElement(
-                                                    'p',
-                                                    { className: 'time' },
-                                                    '5 mins ago'
-                                                ),
-                                                _react2.default.createElement(
-                                                    'p',
-                                                    null,
-                                                    'Steven added new story to \'Lorong24\' hoop'
-                                                )
-                                            )
-                                        ),
-                                        _react2.default.createElement(
-                                            'div',
-                                            { className: 'panel-body' },
-                                            _react2.default.createElement(
-                                                'div',
-                                                { className: 'thumnails' },
-                                                _react2.default.createElement(
-                                                    'a',
-                                                    null,
-                                                    _react2.default.createElement('img', { src: 'images/dummy01.jpg' })
-                                                )
-                                            ),
-                                            _react2.default.createElement(
-                                                'div',
-                                                { className: 'title' },
-                                                _react2.default.createElement(
-                                                    'p',
-                                                    { className: 'time' },
-                                                    '5 mins ago'
-                                                ),
-                                                _react2.default.createElement(
-                                                    'p',
-                                                    null,
-                                                    'Steven added new story to \'Lorong24\' hoop'
-                                                )
-                                            )
-                                        ),
-                                        _react2.default.createElement(
-                                            'div',
-                                            { className: 'panel-body' },
-                                            _react2.default.createElement(
-                                                'div',
-                                                { className: 'thumnails' },
-                                                _react2.default.createElement(
-                                                    'a',
-                                                    null,
-                                                    _react2.default.createElement('img', { src: 'images/dummy01.jpg' })
-                                                )
-                                            ),
-                                            _react2.default.createElement(
-                                                'div',
-                                                { className: 'title' },
-                                                _react2.default.createElement(
-                                                    'p',
-                                                    { className: 'time' },
-                                                    '5 mins ago'
-                                                ),
-                                                _react2.default.createElement(
-                                                    'p',
-                                                    null,
-                                                    'Steven added new story to \'Lorong24\' hoop'
-                                                )
-                                            )
-                                        )
+                                        this.props.activities.map(function (activity, i) {
+                                            return _react2.default.createElement(Activity, { key: i, activity: activity });
+                                        })
                                     )
                                 )
                             )
@@ -611,6 +549,53 @@ var Activities = function (_React$Component6) {
     }]);
 
     return Activities;
+}(_react2.default.Component);
+
+var Activity = function (_React$Component7) {
+    _inherits(Activity, _React$Component7);
+
+    function Activity() {
+        _classCallCheck(this, Activity);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(Activity).apply(this, arguments));
+    }
+
+    _createClass(Activity, [{
+        key: 'render',
+        value: function render() {
+            var activity = this.props.activity;
+
+            return _react2.default.createElement(
+                'div',
+                { className: 'panel-body' },
+                _react2.default.createElement(
+                    'div',
+                    { className: 'thumnails' },
+                    _react2.default.createElement(
+                        'a',
+                        null,
+                        _react2.default.createElement('img', { src: activity.hoop.image_url })
+                    )
+                ),
+                _react2.default.createElement(
+                    'div',
+                    { className: 'title' },
+                    _react2.default.createElement(
+                        'p',
+                        { className: 'time' },
+                        (0, _moment2.default)(activity.created_at).fromNow()
+                    ),
+                    _react2.default.createElement(
+                        'p',
+                        null,
+                        activity.user.name + activity.predicate + '\'' + activity.hoop.name + '\''
+                    )
+                )
+            );
+        }
+    }]);
+
+    return Activity;
 }(_react2.default.Component);
 
 module.exports = Dashboard;
