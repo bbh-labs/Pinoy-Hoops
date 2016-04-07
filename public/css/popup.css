@@ -12,7 +12,8 @@
 }
 
 .popup1--activated,
-.popup2--activated {
+.popup2--activated,
+.popup3--activated {
   visibility: visible;
   opacity: 1;
 }

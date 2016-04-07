@@ -17,6 +17,7 @@ class Dashboard extends React.Component {
                 <Mapp hoops={ this.state.hoops } />
                 <Menu />
                 <AddHoop />
+                <ShowHoop />
                 <Activities activities={ this.state.activities } />
             </div>
         )
@@ -76,14 +77,19 @@ class Mapp extends React.Component {
         for (let i in hoops) {
             let hoop = hoops[i];
             let marker = L.marker([ hoop.latitude, hoop.longitude ])
-             .addTo(this.map)
-             .bindPopup([
-                "<div class='hoop'>",
-                    "<h1>" + hoop.name + "</h1>",
-                    "<p>" + hoop.description + "</p>",
-                    "<img src='" + hoop.image_url + "' />",
-                "</div>",
-             ].join(''));
+                .addTo(this.map)
+                .on('click', function() {
+                    dispatcher.dispatch({ type: 'show-hoop', hoop: hoop });
+                });
+                /*
+                .bindPopup([
+                   "<div class='hoop'>",
+                       "<h1>" + hoop.name + "</h1>",
+                       "<p>" + hoop.description + "</p>",
+                       "<img src='" + hoop.image_url + "' />",
+                   "</div>",
+                ].join(''));
+                */
 
             this.markers.push(marker);
         }
@@ -201,16 +207,23 @@ class AddHoop extends React.Component {
     }
 }
 
-class Hoop extends React.Component {
+class ShowHoop extends React.Component {
     render() {
-        let activated = this.state.activated;
+        let hoop = this.state.hoop;
+        if (!hoop) {
+            return null;
+        }
 
         return (
             <div className='wrapper'>
                 <div className='row'>
                     <div className='hoop'>
-                        <div className={ cx('popup3 overlay', activated && 'popup3--activated') }>
+                        <div className={ cx('popup3 overlay popup3--activated') }>
                             <div className='popup'>
+                                <h3>{ hoop.name }</h3>
+                                <a className='close' href='#' onClick={ this.close }>&times;</a>
+                                <img src={ hoop.image_url } />
+                                <p>{ hoop.description }</p>
                             </div>
                         </div>
                     </div>
@@ -219,10 +232,24 @@ class Hoop extends React.Component {
         )
     }
     state = {
-        activated: false,
+        hoop: null,
+    }
+    componentDidMount() {
+        this.dispatcherId = dispatcher.register((payload) => {
+            switch (payload.type) {
+            case 'show-hoop':
+                this.setState({ hoop: payload.hoop });
+                break;
+            }
+        });
+    }
+    componentWillUnmount() {
+        dispatcher.unregister(this.dispatcherID);
     }
     close = (event) => {
-        this.setState({ activated: false });
+        event.preventDefault();
+
+        this.setState({ hoop: null });
     }
 }
 

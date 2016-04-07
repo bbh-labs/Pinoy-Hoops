@@ -78,6 +78,7 @@ var Dashboard = function (_React$Component) {
                 _react2.default.createElement(Mapp, { hoops: this.state.hoops }),
                 _react2.default.createElement(Menu, null),
                 _react2.default.createElement(AddHoop, null),
+                _react2.default.createElement(ShowHoop, null),
                 _react2.default.createElement(Activities, { activities: this.state.activities })
             );
         }
@@ -119,11 +120,26 @@ var Mapp = function (_React$Component2) {
         return _ret2 = (_temp2 = (_this3 = _possibleConstructorReturn(this, (_Object$getPrototypeO2 = Object.getPrototypeOf(Mapp)).call.apply(_Object$getPrototypeO2, [this].concat(args))), _this3), _this3.setHoops = function (hoops) {
             _this3.clearHoops();
 
-            for (var i in hoops) {
+            var _loop = function _loop(i) {
                 var hoop = hoops[i];
-                var marker = L.marker([hoop.latitude, hoop.longitude]).addTo(_this3.map).bindPopup(["<div class='hoop'>", "<h1>" + hoop.name + "</h1>", "<p>" + hoop.description + "</p>", "<img src='" + hoop.image_url + "' />", "</div>"].join(''));
+                var marker = L.marker([hoop.latitude, hoop.longitude]).addTo(_this3.map).on('click', function () {
+                    _dispatcher2.default.dispatch({ type: 'show-hoop', hoop: hoop });
+                });
+                /*
+                .bindPopup([
+                   "<div class='hoop'>",
+                       "<h1>" + hoop.name + "</h1>",
+                       "<p>" + hoop.description + "</p>",
+                       "<img src='" + hoop.image_url + "' />",
+                   "</div>",
+                ].join(''));
+                */
 
                 _this3.markers.push(marker);
+            };
+
+            for (var i in hoops) {
+                _loop(i);
             }
         }, _this3.clearHoops = function () {
             for (var i in _this3.markers) {
@@ -292,7 +308,7 @@ var AddHoop = function (_React$Component4) {
     function AddHoop() {
         var _Object$getPrototypeO3;
 
-        var _temp3, _this5, _ret3;
+        var _temp3, _this5, _ret4;
 
         _classCallCheck(this, AddHoop);
 
@@ -300,7 +316,7 @@ var AddHoop = function (_React$Component4) {
             args[_key3] = arguments[_key3];
         }
 
-        return _ret3 = (_temp3 = (_this5 = _possibleConstructorReturn(this, (_Object$getPrototypeO3 = Object.getPrototypeOf(AddHoop)).call.apply(_Object$getPrototypeO3, [this].concat(args))), _this5), _this5.state = {
+        return _ret4 = (_temp3 = (_this5 = _possibleConstructorReturn(this, (_Object$getPrototypeO3 = Object.getPrototypeOf(AddHoop)).call.apply(_Object$getPrototypeO3, [this].concat(args))), _this5), _this5.state = {
             activated: false,
             latlng: { lat: 0, lng: 0 }
         }, _this5.close = function (event) {
@@ -318,7 +334,7 @@ var AddHoop = function (_React$Component4) {
             }, function (response) {
                 alert('fail: ' + JSON.stringify(response));
             });
-        }, _temp3), _possibleConstructorReturn(_this5, _ret3);
+        }, _temp3), _possibleConstructorReturn(_this5, _ret4);
     }
 
     _createClass(AddHoop, [{
@@ -416,31 +432,36 @@ var AddHoop = function (_React$Component4) {
     return AddHoop;
 }(_react2.default.Component);
 
-var Hoop = function (_React$Component5) {
-    _inherits(Hoop, _React$Component5);
+var ShowHoop = function (_React$Component5) {
+    _inherits(ShowHoop, _React$Component5);
 
-    function Hoop() {
+    function ShowHoop() {
         var _Object$getPrototypeO4;
 
-        var _temp4, _this7, _ret4;
+        var _temp4, _this7, _ret5;
 
-        _classCallCheck(this, Hoop);
+        _classCallCheck(this, ShowHoop);
 
         for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
             args[_key4] = arguments[_key4];
         }
 
-        return _ret4 = (_temp4 = (_this7 = _possibleConstructorReturn(this, (_Object$getPrototypeO4 = Object.getPrototypeOf(Hoop)).call.apply(_Object$getPrototypeO4, [this].concat(args))), _this7), _this7.state = {
-            activated: false
+        return _ret5 = (_temp4 = (_this7 = _possibleConstructorReturn(this, (_Object$getPrototypeO4 = Object.getPrototypeOf(ShowHoop)).call.apply(_Object$getPrototypeO4, [this].concat(args))), _this7), _this7.state = {
+            hoop: null
         }, _this7.close = function (event) {
-            _this7.setState({ activated: false });
-        }, _temp4), _possibleConstructorReturn(_this7, _ret4);
+            event.preventDefault();
+
+            _this7.setState({ hoop: null });
+        }, _temp4), _possibleConstructorReturn(_this7, _ret5);
     }
 
-    _createClass(Hoop, [{
+    _createClass(ShowHoop, [{
         key: 'render',
         value: function render() {
-            var activated = this.state.activated;
+            var hoop = this.state.hoop;
+            if (!hoop) {
+                return null;
+            }
 
             return _react2.default.createElement(
                 'div',
@@ -453,16 +474,53 @@ var Hoop = function (_React$Component5) {
                         { className: 'hoop' },
                         _react2.default.createElement(
                             'div',
-                            { className: (0, _classnames2.default)('popup3 overlay', activated && 'popup3--activated') },
-                            _react2.default.createElement('div', { className: 'popup' })
+                            { className: (0, _classnames2.default)('popup3 overlay popup3--activated') },
+                            _react2.default.createElement(
+                                'div',
+                                { className: 'popup' },
+                                _react2.default.createElement(
+                                    'h3',
+                                    null,
+                                    hoop.name
+                                ),
+                                _react2.default.createElement(
+                                    'a',
+                                    { className: 'close', href: '#', onClick: this.close },
+                                    '×'
+                                ),
+                                _react2.default.createElement('img', { src: hoop.image_url }),
+                                _react2.default.createElement(
+                                    'p',
+                                    null,
+                                    hoop.description
+                                )
+                            )
                         )
                     )
                 )
             );
         }
+    }, {
+        key: 'componentDidMount',
+        value: function componentDidMount() {
+            var _this8 = this;
+
+            this.dispatcherId = _dispatcher2.default.register(function (payload) {
+                switch (payload.type) {
+                    case 'show-hoop':
+                        _this8.setState({ hoop: payload.hoop });
+                        break;
+                }
+            });
+        }
+    }, {
+        key: 'componentWillUnmount',
+        value: function componentWillUnmount() {
+            _dispatcher2.default.unregister(this.dispatcherID);
+        }
     }]);
 
-    return Hoop;
+    return ShowHoop;
 }(_react2.default.Component);
 
 var Activities = function (_React$Component6) {
