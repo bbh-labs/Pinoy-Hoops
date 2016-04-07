@@ -49,7 +49,7 @@ class Dashboard extends React.Component {
         API.getActivities((activities) => {
             this.setState({ activities: activities });
         }, () => {
-            alert('Failed to get activities');
+            setTimeout(this.getActivities, 1000);
         });
     }
 }
@@ -217,12 +217,12 @@ class ShowHoop extends React.Component {
         return (
             <div className='wrapper'>
                 <div className='row'>
-                    <div className='hoop'>
+                    <div className='show-hoop'>
                         <div className={ cx('popup3 overlay popup3--activated') }>
                             <div className='popup'>
                                 <h3>{ hoop.name }</h3>
                                 <a className='close' href='#' onClick={ this.close }>&times;</a>
-                                <img src={ hoop.image_url } />
+                                <img className='hoop-image' src={ hoop.image_url } />
                                 <p>{ hoop.description }</p>
                             </div>
                         </div>

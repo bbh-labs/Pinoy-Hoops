@@ -9,3 +9,7 @@
 .hoop img {
     max-width: 100%;
 }
+
+.show-hoop .hoop-image {
+    max-height: 256px;
+}

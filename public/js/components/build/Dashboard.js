@@ -64,7 +64,7 @@ var Dashboard = function (_React$Component) {
             _api2.default.getActivities(function (activities) {
                 _this.setState({ activities: activities });
             }, function () {
-                alert('Failed to get activities');
+                setTimeout(_this.getActivities, 1000);
             });
         }, _temp), _possibleConstructorReturn(_this, _ret);
     }
@@ -471,7 +471,7 @@ var ShowHoop = function (_React$Component5) {
                     { className: 'row' },
                     _react2.default.createElement(
                         'div',
-                        { className: 'hoop' },
+                        { className: 'show-hoop' },
                         _react2.default.createElement(
                             'div',
                             { className: (0, _classnames2.default)('popup3 overlay popup3--activated') },
@@ -488,7 +488,7 @@ var ShowHoop = function (_React$Component5) {
                                     { className: 'close', href: '#', onClick: this.close },
                                     '×'
                                 ),
-                                _react2.default.createElement('img', { src: hoop.image_url }),
+                                _react2.default.createElement('img', { className: 'hoop-image', src: hoop.image_url }),
                                 _react2.default.createElement(
                                     'p',
                                     null,
