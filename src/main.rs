@@ -75,9 +75,15 @@ const SESSION_DURATION_HOURS: i64 = 2;
 const GET_HOOPS_SQL: &'static str =
     "SELECT * FROM hoop";
 
+const GET_HOOP_CREATOR_SQL: &'static str =
+    "SELECT created_by FROM hoop WHERE id = $1 LIMIT 1";
+
 const INSERT_HOOP_SQL: &'static str =
     "INSERT INTO hoop (name, description, image_url, latitude, longitude, created_by, created_at, updated_at)
      VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())";
+
+const DELETE_HOOP_BY_ID_SQL: &'static str =
+    "DELETE FROM hoop WHERE id = $1";
 
 const GET_USER_SQL: &'static str =
     "SELECT * FROM usr";
@@ -273,6 +279,47 @@ fn post_hoop_handler(req: &mut Request) -> IronResult<Response> {
     }
 
     Ok(Response::with((status::Ok)))
+}
+
+fn delete_hoop_handler(req: &mut Request) -> IronResult<Response> {
+    let (ok, user_id) = is_logged_in(req);
+    if !ok {
+        return Ok(Response::with((status::Forbidden)));
+    }
+
+    // Get database handle
+    let mutex = req.get::<Write<DatabaseConnection>>().unwrap();
+    let conn = mutex.lock().unwrap();
+
+    let map = match req.get_ref::<Params>() {
+        Ok(map) => map,
+        Err(_) => return Ok(Response::with((status::BadRequest))),
+    };
+
+    let hoop_id = match map.find(&["id"]) {
+        Some(&Value::String(ref val)) => {
+            match val.parse::<i64>() {
+                Ok(id) => id,
+                Err(_) => return Ok(Response::with((status::BadRequest))),
+            }
+        },
+        _ => return Ok(Response::with((status::BadRequest))),
+    };
+
+    for row in &conn.query(GET_HOOP_CREATOR_SQL, &[&hoop_id]).unwrap() {
+        let created_by: i64 = row.get(0);
+        if user_id != created_by {
+            return Ok(Response::with((status::Forbidden)));
+        }
+        break;
+    }
+
+    match conn.query(DELETE_HOOP_BY_ID_SQL, &[&hoop_id]) {
+        Ok(_) => return Ok(Response::with((status::Ok))),
+        Err(error) => println!("{:?}", error),
+    }
+
+    Ok(Response::with((status::InternalServerError)))
 }
 
 fn get_user_handler(req: &mut Request) -> IronResult<Response> {
@@ -624,6 +671,7 @@ fn main() {
     let mut router = Router::new();
     router.get("/hoops", get_hoops_handler);
     router.post("/hoop", post_hoop_handler);
+    router.delete("/hoop", delete_hoop_handler);
     router.get("/user", get_user_handler);
     router.get("/login", get_login_handler);
     router.post("/login", post_login_handler);

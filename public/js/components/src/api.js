@@ -80,6 +80,20 @@ class API {
             }
         });
     }
+    static deleteHoop(data, done, fail) {
+        $.ajax({
+            url: API.BASE_URL + '/api/hoop',
+            method: 'DELETE',
+            data: data,
+            contentType: false,
+            processData: false,
+        }).done(done).fail(function(response) {
+            fail(response);
+            if (response.status == 400) {
+                window.location.reload();
+            }
+        });
+    }
 }
 
 /////////////////
