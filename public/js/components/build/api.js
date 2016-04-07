@@ -75,6 +75,7 @@ var API = function () {
                 method: 'POST'
             }).done(function () {
                 API.user = null;
+                window.location.reload();
             }).fail(fail);
         }
     }, {

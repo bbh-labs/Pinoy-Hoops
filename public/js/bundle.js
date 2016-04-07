@@ -117,6 +117,13 @@
 
 	            _reactRouter.hashHistory.replace('/dashboard');
 
+	            _api2.default.loginUser({}, function (user) {
+	                _api2.default.user = user;
+	                _dispatcher2.default.dispatch({ type: 'loggedIn', user: user });
+	            }, function () {
+	                // do nothing
+	            });
+
 	            this.dispatcherID = _dispatcher2.default.register(function (payload) {
 	                switch (payload.type) {
 	                    case 'loggedIn':
@@ -134,26 +141,30 @@
 	function requireAuth(nextState, replace) {
 	    switch (nextState.location.pathname) {
 	        case '/login':
-	            _api2.default.checkLogIn(function () {
-	                _reactRouter.hashHistory.replace('/dashboard');
-	                //replace({
-	                //    pathname: '/dashboard',
-	                //    state: { nextPathname: nextState.location.pathname },
-	                //});
-	            }, function () {
-	                // do nothing
-	            });
+	            if (_api2.default.loggedIn()) {
+	                replace({
+	                    pathname: '/dashboard',
+	                    state: { nextPathname: nextState.location.pathname }
+	                });
+	            }
+	            //API.checkLogIn(function() {
+	            //    hashHistory.replace('/dashboard');
+	            //}, function() {
+	            //    // do nothing
+	            //});
 	            break;
 	        case '/dashboard':
-	            _api2.default.checkLogIn(function () {
-	                // do nothing
-	            }, function () {
-	                _reactRouter.hashHistory.replace('/login');
-	                //replace({
-	                //    pathname: '/login',
-	                //    state: { nextPathname: nextState.location.pathname },
-	                //});
-	            });
+	            if (!_api2.default.loggedIn()) {
+	                replace({
+	                    pathname: '/login',
+	                    state: { nextPathname: nextState.location.pathname }
+	                });
+	            }
+	            //API.checkLogIn(function() {
+	            //    // do nothing
+	            //}, function() {
+	            //    hashHistory.replace('/login');
+	            //});
 	            break;
 	    }
 	}
@@ -25030,6 +25041,7 @@
 	                method: 'POST'
 	            }).done(function () {
 	                API.user = null;
+	                window.location.reload();
 	            }).fail(fail);
 	        }
 	    }, {
@@ -35496,8 +35508,8 @@
 	                                { className: 'right' },
 	                                _react2.default.createElement(
 	                                    'a',
-	                                    { href: 'login.html' },
-	                                    'login'
+	                                    { href: '#', onClick: this.logOut },
+	                                    'logout'
 	                                )
 	                            ),
 	                            _react2.default.createElement(
@@ -35575,6 +35587,13 @@
 	                    )
 	                )
 	            );
+	        }
+	    }, {
+	        key: 'logOut',
+	        value: function logOut(event) {
+	            event.preventDefault();
+
+	            _api2.default.logOut();
 	        }
 	    }]);
 

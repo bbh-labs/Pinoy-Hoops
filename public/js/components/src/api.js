@@ -52,6 +52,7 @@ class API {
             method: 'POST',
         }).done(function() {
             API.user = null;
+            window.location.reload();
         }).fail(fail);
     }
     static getHoops(done, fail) {

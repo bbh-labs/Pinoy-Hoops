@@ -104,7 +104,7 @@ class Menu extends React.Component {
                     <div className='dt-12 tl-6 tp-8 ml-6'>
                         <ul className='menu'>
                              <a href='/'><img className='logo' src='images/playpinoy_logo_b.png' /></a>
-                             <li className='right'><a href='login.html'>login</a></li>
+                             <li className='right'><a href='#' onClick={ this.logOut }>logout</a></li>
                              <div className='hamburger'>
                                 <a data-toggle='collapse' href='#collapse2'>
                                     <img src='images/basketball_b.png' />
@@ -125,6 +125,11 @@ class Menu extends React.Component {
                 </div>
             </div>
         )
+    }
+    logOut(event) {
+        event.preventDefault();
+
+        API.logOut();
     }
 }
 

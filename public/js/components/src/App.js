@@ -23,6 +23,13 @@ class App extends React.Component {
     componentDidMount() {
         hashHistory.replace('/dashboard');
 
+        API.loginUser({}, function(user) {
+            API.user = user;
+            dispatcher.dispatch({ type: 'loggedIn', user: user });
+        }, function() {
+            // do nothing
+        });
+
         this.dispatcherID = dispatcher.register((payload) => {
             switch (payload.type) {
             case 'loggedIn':
@@ -37,26 +44,30 @@ class App extends React.Component {
 function requireAuth(nextState, replace) {
     switch (nextState.location.pathname) {
     case '/login':
-        API.checkLogIn(function() {
-            hashHistory.replace('/dashboard');
-            //replace({
-            //    pathname: '/dashboard',
-            //    state: { nextPathname: nextState.location.pathname },
-            //});
-        }, function() {
-            // do nothing
-        });
+        if (API.loggedIn()) {
+            replace({
+                pathname: '/dashboard',
+                state: { nextPathname: nextState.location.pathname },
+            });
+        }
+        //API.checkLogIn(function() {
+        //    hashHistory.replace('/dashboard');
+        //}, function() {
+        //    // do nothing
+        //});
         break;
     case '/dashboard':
-        API.checkLogIn(function() {
-            // do nothing
-        }, function() {
-            hashHistory.replace('/login');
-            //replace({
-            //    pathname: '/login',
-            //    state: { nextPathname: nextState.location.pathname },
-            //});
-        });
+        if (!API.loggedIn()) {
+            replace({
+                pathname: '/login',
+                state: { nextPathname: nextState.location.pathname },
+            });
+        }
+        //API.checkLogIn(function() {
+        //    // do nothing
+        //}, function() {
+        //    hashHistory.replace('/login');
+        //});
         break;
     }
 }

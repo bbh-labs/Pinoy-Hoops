@@ -194,8 +194,8 @@ var Menu = function (_React$Component3) {
                                 { className: 'right' },
                                 _react2.default.createElement(
                                     'a',
-                                    { href: 'login.html' },
-                                    'login'
+                                    { href: '#', onClick: this.logOut },
+                                    'logout'
                                 )
                             ),
                             _react2.default.createElement(
@@ -273,6 +273,13 @@ var Menu = function (_React$Component3) {
                     )
                 )
             );
+        }
+    }, {
+        key: 'logOut',
+        value: function logOut(event) {
+            event.preventDefault();
+
+            _api2.default.logOut();
         }
     }]);
 
