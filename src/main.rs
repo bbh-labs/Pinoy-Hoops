@@ -22,7 +22,6 @@ use std::path::Path;
 use std::io::ErrorKind;
 use std::fs;
 use std::str;
-use std::collections::BTreeMap;
 
 // Iron
 use iron::prelude::*;
@@ -77,27 +76,38 @@ const SESSION_KEY: &'static str = "VdN9ndIQ2L0cNa6v0e6e5Q==";
 const SESSION_DURATION_HOURS: i64 = 2;
 
 #[derive(RustcEncodable)]
-struct Hoop {
+struct User {
     id: i64,
+    name: String,
+    email: Option<String>,
+    facebook_id: Option<String>,
+    twitter_id: Option<String>,
+    image_url: Option<String>,
+    created_at: DateTime<UTC>,
+    updated_at: DateTime<UTC>,
+}
+
+#[derive(RustcEncodable)]
+struct Story {
+    id: i64,
+    user_id: i64,
     name: String,
     description: String,
     image_url: String,
-    latitude: f32,
-    longitude: f32,
-    created_by: i64,
     created_at: String,
     updated_at: String,
 }
 
 #[derive(RustcEncodable)]
-struct User {
+struct Hoop {
     id: i64,
+    user_id: i64,
     name: String,
-    email: String,
-    facebook_id: String,
-    twitter_id: String,
-    created_at: DateTime<UTC>,
-    updated_at: DateTime<UTC>,
+    description: String,
+    latitude: f32,
+    longitude: f32,
+    created_at: String,
+    updated_at: String,
 }
 
 fn get_hoops_handler(req: &mut Request) -> IronResult<Response> {
@@ -107,25 +117,51 @@ fn get_hoops_handler(req: &mut Request) -> IronResult<Response> {
 
     let mut hoops = Vec::new();
 
+    #[derive(RustcEncodable)]
+    struct HoopAndStories {
+        hoop: Hoop,
+        stories: Vec<Story>,
+    }
+
     for row in &conn.query(db::GET_HOOPS_SQL, &[]).unwrap() {
-        let mut hoop = Hoop {
-            id: row.get(0),
-            name: row.get(1),
-            description: row.get(2),
-            image_url: row.get(3),
-            latitude: row.get(4),
-            longitude: row.get(5),
-            created_by: row.get(6),
-            created_at: "".to_string(),
-            updated_at: "".to_string(),
+        let mut hoop = HoopAndStories {
+            hoop: Hoop {
+                id: row.get(0),
+                user_id: row.get(1),
+                name: row.get(2),
+                description: row.get(3),
+                latitude: row.get(4),
+                longitude: row.get(5),
+                created_at: "".to_string(),
+                updated_at: "".to_string(),
+            },
+            stories: Vec::new(),
         };
 
-        let created_at: DateTime<UTC> = row.get(7);
-        let updated_at: DateTime<UTC> = row.get(8);
+        for row in &conn.query(db::GET_STORIES_SQL, &[&hoop.hoop.id]).unwrap() {
+            let mut story = Story {
+                id: row.get(0),
+                user_id: row.get(1),
+                name: row.get(2),
+                description: row.get(3),
+                image_url: row.get(4),
+                created_at: "".to_string(),
+                updated_at: "".to_string(),
+            };
 
-        hoop.created_at = created_at.to_rfc2822();
-        hoop.updated_at = updated_at.to_rfc2822();
+            let created_at: DateTime<UTC> = row.get(5);
+            let updated_at: DateTime<UTC> = row.get(6);
 
+            story.created_at = created_at.to_rfc2822();
+            story.updated_at = updated_at.to_rfc2822();
+            hoop.stories.push(story);
+        }
+
+        let created_at: DateTime<UTC> = row.get(6);
+        let updated_at: DateTime<UTC> = row.get(7);
+
+        hoop.hoop.created_at = created_at.to_rfc2822();
+        hoop.hoop.updated_at = updated_at.to_rfc2822();
         hoops.push(hoop);
     }
 
@@ -197,7 +233,7 @@ fn post_hoop_handler(req: &mut Request) -> IronResult<Response> {
     };
 
     // Check if hoop with existing name already exists
-    for row in &conn.query(db::COUNT_HOOP_WITH_NAME_SQL, &[name]).unwrap() {
+    for row in &conn.query(db::COUNT_HOOP_BY_NAME_SQL, &[name]).unwrap() {
         let count = row.get::<usize, i64>(0);
         if count > 0 {
             return Ok(Response::with((status::BadRequest, "Hoop with the same name already exists")));
@@ -244,8 +280,10 @@ fn post_hoop_handler(req: &mut Request) -> IronResult<Response> {
         }
     };
 
-    // Insert hoop
-    let hoop_id = match conn.query(db::INSERT_HOOP_SQL, &[&name, &description, &image_url, &latitude, &longitude, &user_id]) {
+    let tx = conn.transaction().unwrap();
+
+    // Insert story
+    let story_id = match tx.query(db::INSERT_STORY_SQL, &[&user_id, &name, &description, &image_url]) {
         Ok(ref rows) => { let id: i64 = rows.iter().next().unwrap().get(0); id },
         Err(error) => {
             // Clean-up the image file since it failed to register on the database
@@ -253,22 +291,60 @@ fn post_hoop_handler(req: &mut Request) -> IronResult<Response> {
                 println!("{:?}", error);
             }
 
-            println!("{:?}", error);
+            println!("insert story: {:?}", error);
             return Ok(Response::with((status::InternalServerError)))
         },
     };
 
+    // Insert hoop
+    let hoop_id = match tx.query(db::INSERT_HOOP_SQL, &[&user_id, &name, &description, &latitude, &longitude]) {
+        Ok(ref rows) => { let id: i64 = rows.iter().next().unwrap().get(0); id },
+        Err(error) => {
+            // Clean-up the image file since it failed to register on the database
+            if let Err(error) = fs::remove_file(image_url) {
+                println!("{:?}", error);
+            }
+
+            println!("insert hoop: {:?}", error);
+            return Ok(Response::with((status::InternalServerError)))
+        },
+    };
+
+    // Insert Hoop-Story 
+    if let Err(error) = tx.execute(db::INSERT_HOOP_STORY_SQL, &[&hoop_id, &story_id]) {
+        // Clean-up the image file since it failed to register on the database
+        if let Err(error) = fs::remove_file(image_url) {
+            println!("insert hoop-story: {:?}", error);
+        }
+
+        println!("insert hoop-story: {:?}", error);
+        return Ok(Response::with((status::InternalServerError)))
+    }
+
+    // Insert Hoop-Featured-Story
+    if let Err(error) = tx.execute(db::INSERT_HOOP_FEATURED_STORY_SQL, &[&hoop_id, &story_id]) {
+        // Clean-up the image file since it failed to register on the database
+        if let Err(error) = fs::remove_file(image_url) {
+            println!("insert hoop-featured-story {:?}", error);
+        }
+
+        println!("insert hoop-featured-story: {:?}", error);
+        return Ok(Response::with((status::InternalServerError)))
+    }
+
     // Insert activity
     let activity_type = activity::Type::AddHoop as i64;
-    if let Err(error) = conn.execute(db::INSERT_ACTIVITY_SQL, &[&activity_type, &user_id, &hoop_id]) {
+    if let Err(error) = tx.execute(db::INSERT_ACTIVITY_WITH_HOOP_SQL, &[&activity_type, &user_id, &hoop_id]) {
         // Clean-up the image file since it failed to register on the database
         if let Err(error) = fs::remove_file(image_url) {
             println!("{:?}", error);
         }
 
-        println!("{:?}", error);
+        println!("insert activity: {:?}", error);
         return Ok(Response::with((status::InternalServerError)))
     }
+
+    tx.commit().unwrap();
 
     Ok(Response::with((status::Ok)))
 }
@@ -298,7 +374,7 @@ fn delete_hoop_handler(req: &mut Request) -> IronResult<Response> {
         _ => return Ok(Response::with((status::BadRequest))),
     };
 
-    for row in &conn.query(db::GET_HOOP_CREATOR_SQL, &[&hoop_id]).unwrap() {
+    for row in &conn.query(db::GET_HOOP_USER_ID_SQL, &[&hoop_id]).unwrap() {
         let created_by: i64 = row.get(0);
         if user_id != created_by {
             return Ok(Response::with((status::Forbidden)));
@@ -319,15 +395,31 @@ fn get_user_handler(req: &mut Request) -> IronResult<Response> {
     let mutex = req.get::<Write<DatabaseConnection>>().unwrap();
     let conn = mutex.lock().unwrap();
 
-    for row in &conn.query(db::GET_USER_SQL, &[]).unwrap() {
+    let map = match req.get_ref::<Params>() {
+        Ok(map) => map,
+        Err(_) => return Ok(Response::with((status::BadRequest))),
+    };
+
+    let user_id = match map.find(&["id"]) {
+        Some(&Value::String(ref val)) => {
+            match val.parse::<i64>() {
+                Ok(id) => id,
+                Err(_) => return Ok(Response::with((status::BadRequest))),
+            }
+        },
+        _ => return Ok(Response::with((status::BadRequest))),
+    };
+
+    for row in &conn.query(db::GET_USER_BY_ID_SQL, &[&user_id]).unwrap() {
         let user = User {
             id: row.get(0),
             name: row.get(1),
             email: row.get(2),
             facebook_id: row.get(3),
             twitter_id: row.get(4),
-            created_at: row.get(5),
-            updated_at: row.get(6),
+            image_url: row.get(5),
+            created_at: row.get(6),
+            updated_at: row.get(7),
         };
 
         if let Ok(json_output) = json::encode(&user) {
@@ -365,8 +457,9 @@ fn post_login_handler(req: &mut Request) -> IronResult<Response> {
                     email: row.get(2),
                     facebook_id: row.get(3),
                     twitter_id: row.get(4),
-                    created_at: row.get(5),
-                    updated_at: row.get(6),
+                    image_url: row.get(5),
+                    created_at: row.get(6),
+                    updated_at: row.get(7),
                 };
 
                 if let Ok(json_output) = json::encode(&user) {
@@ -431,8 +524,9 @@ fn post_login_handler(req: &mut Request) -> IronResult<Response> {
                     email: row.get(2),
                     facebook_id: row.get(3),
                     twitter_id: row.get(4),
-                    created_at: row.get(5),
-                    updated_at: row.get(6),
+                    image_url: row.get(5),
+                    created_at: row.get(6),
+                    updated_at: row.get(7),
                 };
 
                 if let Ok(json_output) = json::encode(&user) {
@@ -467,8 +561,9 @@ fn post_login_handler(req: &mut Request) -> IronResult<Response> {
                         email: row.get(2),
                         facebook_id: row.get(3),
                         twitter_id: row.get(4),
-                        created_at: row.get(5),
-                        updated_at: row.get(6),
+                        image_url: row.get(5),
+                        created_at: row.get(6),
+                        updated_at: row.get(7)
                     };
 
                     if let Ok(json_output) = json::encode(&user) {
@@ -549,8 +644,8 @@ fn get_activities_handler(req: &mut Request) -> IronResult<Response> {
         typ: i64,
         user: User,
         predicate: String,
-        hoop: Hoop,
-        extra: Option<BTreeMap<String, String>>,
+        hoop: Option<Hoop>,
+        story: Option<Story>,
         created_at: String,
     }
 
@@ -569,28 +664,45 @@ fn get_activities_handler(req: &mut Request) -> IronResult<Response> {
                 email: row.get(3),
                 facebook_id: row.get(4),
                 twitter_id: row.get(5),
-                created_at: row.get(6),
-                updated_at: row.get(7),
+                image_url: row.get(6),
+                created_at: row.get(7),
+                updated_at: row.get(8),
             },
             predicate: activity::predicate_from_type(row.get(0)),
-            hoop: Hoop {
-                id: row.get(8),
-                name: row.get(9),
-                description: row.get(10),
-                image_url: row.get(11),
-                latitude: row.get(12),
-                longitude: row.get(13),
-                created_by: row.get(14),
-                created_at: "".to_string(),
-                updated_at: "".to_string(),
-            },
-            extra: None,
+            hoop: None,
+            story: None,
             created_at: "".to_string(),
         };
 
-        let created_at: DateTime<UTC> = row.get(15);
-        activity.created_at = created_at.to_rfc2822();
+        let hoop_id: Option<i64> = row.get(9);
+        if hoop_id.is_some() {
+            activity.hoop = Some(Hoop {
+                id: hoop_id.unwrap(),
+                user_id: row.get(10),
+                name: row.get(11),
+                description: row.get(12),
+                latitude: row.get(13),
+                longitude: row.get(14),
+                created_at: row.get(15),
+                updated_at: row.get(16),
+            });
+        }
 
+        let story_id: Option<i64> = row.get(17);
+        if story_id.is_some() {
+            activity.story = Some(Story {
+                id: story_id.unwrap(),
+                user_id: row.get(18),
+                name: row.get(19),
+                description: row.get(20),
+                image_url: row.get(21),
+                created_at: row.get(22),
+                updated_at: row.get(23),
+            });
+        }
+
+        let created_at: DateTime<UTC> = row.get(24);
+        activity.created_at = created_at.to_rfc2822();
         activities.push(activity);
     }
 
@@ -682,8 +794,8 @@ fn main() {
 
     let conn = Connection::connect(format!("postgres://{}{}@{}:{}", dbuser, dbpass, dbhost, dbport).as_str(), SslMode::None).unwrap();
 
-    // Create Hoop table
-    if let Err(error) = conn.execute(db::CREATE_HOOP_TABLE, &[]) {
+    // Create User table
+    if let Err(error) = conn.execute(db::CREATE_USER_TABLE, &[]) {
         if let Error::Db(error) = error {
             if error.code != SqlState::DuplicateTable {
                 println!("{:?}", error);
@@ -692,8 +804,18 @@ fn main() {
         }
     }
 
-    // Create User table
-    if let Err(error) = conn.execute(db::CREATE_USER_TABLE, &[]) {
+    // Create Story table
+    if let Err(error) = conn.execute(db::CREATE_STORY_TABLE, &[]) {
+        if let Error::Db(error) = error {
+            if error.code != SqlState::DuplicateTable {
+                println!("{:?}", error);
+                return;
+            }
+        }
+    }
+
+    // Create Hoop table
+    if let Err(error) = conn.execute(db::CREATE_HOOP_TABLE, &[]) {
         if let Error::Db(error) = error {
             if error.code != SqlState::DuplicateTable {
                 println!("{:?}", error);
@@ -712,38 +834,69 @@ fn main() {
         }
     }
 
-    let mut router = Router::new();
-    router.get("/hoops", get_hoops_handler);
-    router.post("/hoop", post_hoop_handler);
-    router.delete("/hoop", delete_hoop_handler);
-    router.get("/user", get_user_handler);
-    router.get("/login", get_login_handler);
-    router.post("/login", post_login_handler);
-    router.any("/logout", logout_handler);
-    router.get("/activities", get_activities_handler);
+    // Create Activity table
+    if let Err(error) = conn.execute(db::CREATE_ACTIVITY_TABLE, &[]) {
+        if let Error::Db(error) = error {
+            if error.code != SqlState::DuplicateTable {
+                println!("{:?}", error);
+                return;
+            }
+        }
+    }
 
-    let mut mount = Mount::new();
-    if matches.opt_present("serve-site") {
+    // Create Hoop Featured Story table
+    if let Err(error) = conn.execute(db::CREATE_HOOP_FEATURED_STORY_TABLE, &[]) {
+        if let Error::Db(error) = error {
+            if error.code != SqlState::DuplicateTable {
+                println!("{:?}", error);
+                return;
+            }
+        }
+    }
+
+    // Create Hoop Story table
+    if let Err(error) = conn.execute(db::CREATE_HOOP_STORY_TABLE, &[]) {
+        if let Error::Db(error) = error {
+            if error.code != SqlState::DuplicateTable {
+                println!("{:?}", error);
+                return;
+            }
+        }
+    }
+
+    let serve_site = matches.opt_present("serve-site");
+    if serve_site {
+        let mut router = Router::new();
+        router.get("/hoops", get_hoops_handler);
+        router.post("/hoop", post_hoop_handler);
+        router.delete("/hoop", delete_hoop_handler);
+        router.get("/user", get_user_handler);
+        router.get("/login", get_login_handler);
+        router.post("/login", post_login_handler);
+        router.any("/logout", logout_handler);
+        router.get("/activities", get_activities_handler);
+
+        let mut mount = Mount::new();
         mount.mount("/", Static::new(Path::new("public")));
         mount.mount("/content", Static::new(Path::new("content")));
+        mount.mount("/api", router);
+
+        let mut chain = Chain::new(mount);
+        chain.link(Write::<DatabaseConnection>::both(conn));
+
+        let host: String = match matches.opt_str("host") {
+            Some(t) => t,
+            None => "localhost".to_string(),
+        };
+
+        let port: String = match matches.opt_str("port") {
+            Some(t) => t,
+            None => "8080".to_string(),
+        };
+
+        let address = format!("{}:{}", host, port);
+        println!("Serving at {}", address);
+
+        Iron::new(chain).http(address.as_str()).unwrap();
     }
-    mount.mount("/api", router);
-
-    let mut chain = Chain::new(mount);
-    chain.link(Write::<DatabaseConnection>::both(conn));
-
-    let host: String = match matches.opt_str("host") {
-        Some(t) => t,
-        None => "localhost".to_string(),
-    };
-
-    let port: String = match matches.opt_str("port") {
-        Some(t) => t,
-        None => "8080".to_string(),
-    };
-
-    let address = format!("{}:{}", host, port);
-    println!("Serving at {}", address);
-
-    Iron::new(chain).http(address.as_str()).unwrap();
 }

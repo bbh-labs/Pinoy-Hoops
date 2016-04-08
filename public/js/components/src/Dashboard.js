@@ -47,6 +47,7 @@ class Dashboard extends React.Component {
     }
     getActivities = () => {
         API.getActivities((activities) => {
+            console.log(activities);
             this.setState({ activities: activities });
         }, () => {
             setTimeout(this.getActivities, 1000);
@@ -214,6 +215,9 @@ class ShowHoop extends React.Component {
             return null;
         }
 
+        let hoop = hoop.hoop;
+        let story = hoop.stories[0];
+
         return (
             <div className='wrapper'>
                 <div className='row'>
@@ -222,7 +226,7 @@ class ShowHoop extends React.Component {
                             <div className='popup'>
                                 <h3>{ hoop.name }</h3>
                                 <a className='close' href='#' onClick={ this.close }>&times;</a>
-                                <img className='hoop-image' src={ hoop.image_url } />
+                                <img className='hoop-image' src={ story.image_url } />
                                 <p>{ hoop.description }</p>
                             </div>
                         </div>
