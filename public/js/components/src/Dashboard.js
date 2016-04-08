@@ -47,7 +47,6 @@ class Dashboard extends React.Component {
     }
     getActivities = () => {
         API.getActivities((activities) => {
-            console.log(activities);
             this.setState({ activities: activities });
         }, () => {
             setTimeout(this.getActivities, 1000);
@@ -77,20 +76,11 @@ class Mapp extends React.Component {
 
         for (let i in hoops) {
             let hoop = hoops[i];
-            let marker = L.marker([ hoop.latitude, hoop.longitude ])
+            let marker = L.marker([ hoops[i].hoop.latitude, hoops[i].hoop.longitude ])
                 .addTo(this.map)
                 .on('click', function() {
                     dispatcher.dispatch({ type: 'show-hoop', hoop: hoop });
                 });
-                /*
-                .bindPopup([
-                   "<div class='hoop'>",
-                       "<h1>" + hoop.name + "</h1>",
-                       "<p>" + hoop.description + "</p>",
-                       "<img src='" + hoop.image_url + "' />",
-                   "</div>",
-                ].join(''));
-                */
 
             this.markers.push(marker);
         }
@@ -215,8 +205,8 @@ class ShowHoop extends React.Component {
             return null;
         }
 
-        let hoop = hoop.hoop;
         let story = hoop.stories[0];
+        hoop = hoop.hoop;
 
         return (
             <div className='wrapper'>
@@ -306,7 +296,7 @@ class Activity extends React.Component {
         return (
             <div className='panel-body'>
                 <div className='thumnails' >
-                    <a><img src={ activity.hoop.image_url } /></a>
+                    <a><img src={ activity.story.image_url } /></a>
                 </div>
                 <div className='title'>
                     <p className='time'>{ moment(activity.created_at).fromNow() }</p>

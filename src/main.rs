@@ -474,7 +474,7 @@ fn post_login_handler(req: &mut Request) -> IronResult<Response> {
                     return Ok(response);
                 }
             },
-            Err(error) => println!("{:?}", error),
+            Err(error) => println!("is_logged_in: {:?}", error),
         }
     }
 
@@ -676,29 +676,44 @@ fn get_activities_handler(req: &mut Request) -> IronResult<Response> {
 
         let hoop_id: Option<i64> = row.get(9);
         if hoop_id.is_some() {
-            activity.hoop = Some(Hoop {
+            let mut hoop = Hoop {
                 id: hoop_id.unwrap(),
                 user_id: row.get(10),
                 name: row.get(11),
                 description: row.get(12),
                 latitude: row.get(13),
                 longitude: row.get(14),
-                created_at: row.get(15),
-                updated_at: row.get(16),
-            });
+                created_at: "".to_string(),
+                updated_at: "".to_string(),
+            };
+
+            let created_at: DateTime<UTC> = row.get(15);
+            let updated_at: DateTime<UTC> = row.get(16);
+
+            hoop.created_at = created_at.to_rfc2822();
+            hoop.updated_at = updated_at.to_rfc2822();
+
+            activity.hoop = Some(hoop);
         }
 
         let story_id: Option<i64> = row.get(17);
         if story_id.is_some() {
-            activity.story = Some(Story {
+            let mut story = Story {
                 id: story_id.unwrap(),
                 user_id: row.get(18),
                 name: row.get(19),
                 description: row.get(20),
                 image_url: row.get(21),
-                created_at: row.get(22),
-                updated_at: row.get(23),
-            });
+                created_at: "".to_string(),
+                updated_at: "".to_string(),
+            };
+            let created_at: DateTime<UTC> = row.get(22);
+            let updated_at: DateTime<UTC> = row.get(23);
+
+            story.created_at = created_at.to_rfc2822();
+            story.updated_at = updated_at.to_rfc2822();
+
+            activity.story = Some(story);
         }
 
         let created_at: DateTime<UTC> = row.get(24);

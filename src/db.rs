@@ -115,7 +115,7 @@ VALUES ($1, $2)";
 
 pub const GET_ACTIVITIES_SQL: &'static str = "
 SELECT activity.type, \"user\".*, hoop.*, story.*, activity.created_at FROM activity
-LEFT OUTER JOIN user ON activity.user_id = \"user\".id
+LEFT OUTER JOIN \"user\" ON activity.user_id = \"user\".id
 LEFT OUTER JOIN hoop ON activity.hoop_id = hoop.id
 LEFT OUTER JOIN story ON activity.story_id = story.id
 ORDER BY activity.created_at DESC";

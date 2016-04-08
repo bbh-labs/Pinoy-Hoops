@@ -122,18 +122,9 @@ var Mapp = function (_React$Component2) {
 
             var _loop = function _loop(i) {
                 var hoop = hoops[i];
-                var marker = L.marker([hoop.latitude, hoop.longitude]).addTo(_this3.map).on('click', function () {
+                var marker = L.marker([hoops[i].hoop.latitude, hoops[i].hoop.longitude]).addTo(_this3.map).on('click', function () {
                     _dispatcher2.default.dispatch({ type: 'show-hoop', hoop: hoop });
                 });
-                /*
-                .bindPopup([
-                   "<div class='hoop'>",
-                       "<h1>" + hoop.name + "</h1>",
-                       "<p>" + hoop.description + "</p>",
-                       "<img src='" + hoop.image_url + "' />",
-                   "</div>",
-                ].join(''));
-                */
 
                 _this3.markers.push(marker);
             };
@@ -463,6 +454,9 @@ var ShowHoop = function (_React$Component5) {
                 return null;
             }
 
+            var story = hoop.stories[0];
+            hoop = hoop.hoop;
+
             return _react2.default.createElement(
                 'div',
                 { className: 'wrapper' },
@@ -488,7 +482,7 @@ var ShowHoop = function (_React$Component5) {
                                     { className: 'close', href: '#', onClick: this.close },
                                     '×'
                                 ),
-                                _react2.default.createElement('img', { className: 'hoop-image', src: hoop.image_url }),
+                                _react2.default.createElement('img', { className: 'hoop-image', src: story.image_url }),
                                 _react2.default.createElement(
                                     'p',
                                     null,
@@ -639,7 +633,7 @@ var Activity = function (_React$Component7) {
                     _react2.default.createElement(
                         'a',
                         null,
-                        _react2.default.createElement('img', { src: activity.hoop.image_url })
+                        _react2.default.createElement('img', { src: activity.story.image_url })
                     )
                 ),
                 _react2.default.createElement(
